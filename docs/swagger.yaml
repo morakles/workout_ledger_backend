@@ -1,0 +1,70 @@
+basePath: /
+definitions:
+  main.HealthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  main.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Simple REST API for Workout Ledger.
+  title: Workout Ledger API
+  version: "1.0"
+paths:
+  /dbtest:
+    get:
+      description: Returns ok if the service is running.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+        "405":
+          description: method not allowed
+          schema:
+            type: string
+      summary: database connection and select test
+      tags:
+      - health
+  /health:
+    get:
+      description: Returns ok if the service is running.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+        "405":
+          description: method not allowed
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - health
+  /hello:
+    get:
+      description: Returns a simple hello message.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.MessageResponse'
+        "405":
+          description: method not allowed
+          schema:
+            type: string
+      summary: Hello endpoint
+      tags:
+      - demo
+swagger: "2.0"
