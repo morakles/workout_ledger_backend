@@ -3,8 +3,12 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"workout_ledger/domain/param_exercise"
 	"workout_ledger/internal/http/presenter"
 	param_exercise_uc "workout_ledger/internal/usecase/param_exercise"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type ParamExerciseHandler struct {
@@ -36,6 +40,20 @@ type createParamExerciseResponse struct {
 type getParamExercisesResponse struct {
 	// in: body
 	Body []paramExerciseResponse `json:"body"`
+}
+
+// swagger:parameters getParamExerciseByID
+type getParamExerciseByIDRequest struct {
+	// ID param exercise ID
+	//
+	// in: path
+	ID int64 `json:"id" example:"1"`
+}
+
+// swagger:response getParamExerciseByIDResponse
+type getParamExerciseByIDResponse struct {
+	// in: body
+	Body paramExerciseResponse `json:"body"`
 }
 
 type paramExerciseResponse struct {
@@ -106,4 +124,38 @@ func (h *ParamExerciseHandler) GetParamExercises(w http.ResponseWriter, r *http.
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+// GetParamExerciseByID godoc
+// @Summary      Get param exercise by ID
+// @Description  Retrieves a param exercise by ID
+// @Tags         param_exercises
+// @Produce      json
+// @Param        id   path      int  true  "Param exercise ID"
+// @Success      200  {object}  paramExerciseResponse
+// @Failure      400  {object}  presenter.APIError
+// @Failure      404  {object}  presenter.APIError
+// @Failure      500  {object}  presenter.APIError
+// @Router       /v1/param_exercises/{id} [get]
+func (h *ParamExerciseHandler) GetParamExerciseByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		status, apiErr := presenter.StatusAndError(param_exercise.ErrInvalidInput)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
+	exercise, err := h.svc.GetParamExerciseByID(r.Context(), id)
+	if err != nil {
+		status, apiErr := presenter.StatusAndError(err)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, paramExerciseResponse{
+		ID:      exercise.ID,
+		Name:    exercise.Name,
+		IconUrl: exercise.IconUrl,
+	})
 }

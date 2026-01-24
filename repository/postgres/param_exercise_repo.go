@@ -76,6 +76,28 @@ func (exerciseRepo *ParamExerciseRepo) GetParamExercises(ctx context.Context) ([
 	return exercises, nil
 }
 
+func (exerciseRepo *ParamExerciseRepo) GetParamExerciseByID(ctx context.Context, id int64) (domain.ParamExercise, error) {
+	sqlSelect := exerciseRepo.sb.Select("id", "exercise_name", "icon_url").
+		From(exerciseTableName).
+		Where(sq.Eq{"id": id})
+
+	sqlStr, args, err := sqlSelect.ToSql()
+	if err != nil {
+		return domain.ParamExercise{}, err
+	}
+
+	var exercise domain.ParamExercise
+	err = exerciseRepo.db.QueryRowContext(ctx, sqlStr, args...).Scan(&exercise.ID, &exercise.Name, &exercise.IconUrl)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return domain.ParamExercise{}, domain.ErrNotFound
+		}
+		return domain.ParamExercise{}, err
+	}
+
+	return exercise, nil
+}
+
 func isUniqueViolation(err error) bool {
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "duplicate key") ||
