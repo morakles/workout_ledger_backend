@@ -32,6 +32,7 @@ func New(h *handler.ParamExerciseHandler) http.Handler {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Post("/param_exercises", h.CreateParamExercise)
+		r.Get("/param_exercises", h.GetParamExercises)
 	})
 	return r
 }

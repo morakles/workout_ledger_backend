@@ -8,3 +8,9 @@ type CreateParamExerciseDTO struct {
 type CreateParamExerciseResultDTO struct {
 	ID int64
 }
+
+type ParamExerciseDTO struct {
+	ID      int64
+	Name    string
+	IconUrl string
+}
