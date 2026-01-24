@@ -32,6 +32,18 @@ type createParamExerciseResponse struct {
 	ID int64 `json:"id" example:"1"`
 }
 
+// swagger:response getParamExercisesResponse
+type getParamExercisesResponse struct {
+	// in: body
+	Body []paramExerciseResponse `json:"body"`
+}
+
+type paramExerciseResponse struct {
+	ID      int64  `json:"id" example:"1"`
+	Name    string `json:"name" example:"Push-up"`
+	IconUrl string `json:"icon_url" example:"https://example.com/icon.png"`
+}
+
 // CreateParamExercise godoc
 // @Summary      Create param exercise
 // @Description  Creates a new param exercise
@@ -66,4 +78,32 @@ func (h *ParamExerciseHandler) CreateParamExercise(w http.ResponseWriter, r *htt
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"id": res.ID,
 	})
+}
+
+// GetParamExercises godoc
+// @Summary      Get param exercises
+// @Description  Retrieves all param exercises
+// @Tags         param_exercises
+// @Produce      json
+// @Success      200  {array}   paramExerciseResponse
+// @Failure      500  {object}  presenter.APIError
+// @Router       /v1/param_exercises [get]
+func (h *ParamExerciseHandler) GetParamExercises(w http.ResponseWriter, r *http.Request) {
+	exercises, err := h.svc.GetParamExercises(r.Context())
+	if err != nil {
+		status, apiErr := presenter.StatusAndError(err)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
+	response := make([]paramExerciseResponse, 0, len(exercises))
+	for _, exercise := range exercises {
+		response = append(response, paramExerciseResponse{
+			ID:      exercise.ID,
+			Name:    exercise.Name,
+			IconUrl: exercise.IconUrl,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }

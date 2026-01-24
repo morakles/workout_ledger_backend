@@ -44,6 +44,38 @@ func (exerciseRepo *ParamExerciseRepo) CreateParamxercise(ctx context.Context, p
 	return id, nil
 }
 
+func (exerciseRepo *ParamExerciseRepo) GetParamExercises(ctx context.Context) ([]domain.ParamExercise, error) {
+	sqlSelect := exerciseRepo.sb.Select("id", "exercise_name", "icon_url").
+		From(exerciseTableName).
+		OrderBy("id")
+
+	sqlStr, args, err := sqlSelect.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := exerciseRepo.db.QueryContext(ctx, sqlStr, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var exercises []domain.ParamExercise
+	for rows.Next() {
+		var exercise domain.ParamExercise
+		if err := rows.Scan(&exercise.ID, &exercise.Name, &exercise.IconUrl); err != nil {
+			return nil, err
+		}
+		exercises = append(exercises, exercise)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return exercises, nil
+}
+
 func isUniqueViolation(err error) bool {
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "duplicate key") ||
