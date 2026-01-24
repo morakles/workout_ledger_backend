@@ -93,6 +93,53 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/param_exercises/{id}": {
+            "get": {
+                "description": "Retrieves a param exercise by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "param_exercises"
+                ],
+                "summary": "Get param exercise by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Param exercise ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.paramExerciseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {

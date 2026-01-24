@@ -8,6 +8,7 @@ import (
 type ParamExerciseRepository interface {
 	CreateParamxercise(ctx context.Context, param_exercise domain.ParamExercise) (int64, error)
 	GetParamExercises(ctx context.Context) ([]domain.ParamExercise, error)
+	GetParamExerciseByID(ctx context.Context, id int64) (domain.ParamExercise, error)
 }
 
 type ParamExerciseService struct {
@@ -51,4 +52,21 @@ func (s *ParamExerciseService) GetParamExercises(ctx context.Context) ([]ParamEx
 	}
 
 	return result, nil
+}
+
+func (s *ParamExerciseService) GetParamExerciseByID(ctx context.Context, id int64) (ParamExerciseDTO, error) {
+	if id <= 0 {
+		return ParamExerciseDTO{}, domain.ErrInvalidInput
+	}
+
+	exercise, err := s.paramExerciseRepository.GetParamExerciseByID(ctx, id)
+	if err != nil {
+		return ParamExerciseDTO{}, err
+	}
+
+	return ParamExerciseDTO{
+		ID:      exercise.ID,
+		Name:    exercise.Name,
+		IconUrl: exercise.IconUrl,
+	}, nil
 }
