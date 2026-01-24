@@ -1,0 +1,95 @@
+basePath: /
+definitions:
+  handler.createParamExerciseRequest:
+    properties:
+      icon_url:
+        example: https://example.com/icon.png
+        type: string
+      name:
+        example: Push-up
+        type: string
+    type: object
+  handler.createParamExerciseResponse:
+    properties:
+      id:
+        example: 1
+        type: integer
+    type: object
+  handler.paramExerciseResponse:
+    properties:
+      icon_url:
+        example: https://example.com/icon.png
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Push-up
+        type: string
+    type: object
+  presenter.APIError:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Simple REST API for Workout Ledger.
+  title: Workout Ledger API
+  version: "1.0"
+paths:
+  /v1/param_exercises:
+    get:
+      description: Retrieves all param exercises
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.paramExerciseResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      summary: Get param exercises
+      tags:
+      - param_exercises
+    post:
+      consumes:
+      - application/json
+      description: Creates a new param exercise
+      parameters:
+      - description: payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.createParamExerciseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.createParamExerciseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      summary: Create param exercise
+      tags:
+      - param_exercises
+swagger: "2.0"
