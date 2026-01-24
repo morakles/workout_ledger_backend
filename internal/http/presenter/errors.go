@@ -3,6 +3,7 @@ package presenter
 import (
 	"errors"
 	"net/http"
+	authDomain "workout_ledger/domain/auth"
 	paramExerciseDomain "workout_ledger/domain/param_exercise"
 )
 
@@ -23,6 +24,12 @@ func StatusAndError(err error) (int, APIError) {
 		return http.StatusConflict, APIError{Code: "WORKOUT_NOT_ACTIVE", Message: "Workout is not active"}
 	case errors.Is(err, paramExerciseDomain.ErrConflict):
 		return http.StatusConflict, APIError{Code: "CONFLICT", Message: "Conflict"}
+	case errors.Is(err, authDomain.ErrInvalidInput):
+		return http.StatusBadRequest, APIError{Code: "INVALID_INPUT", Message: "Invalid input"}
+	case errors.Is(err, authDomain.ErrUnauthorized):
+		return http.StatusUnauthorized, APIError{Code: "UNAUTHORIZED", Message: "Unauthorized"}
+	case errors.Is(err, authDomain.ErrStateMismatch):
+		return http.StatusBadRequest, APIError{Code: "STATE_MISMATCH", Message: "OAuth state mismatch"}
 	default:
 		return http.StatusInternalServerError, APIError{Code: "INTERNAL", Message: "Internal server error"}
 	}

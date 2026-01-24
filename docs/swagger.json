@@ -8,6 +8,83 @@
     },
     "basePath": "/",
     "paths": {
+        "/v1/auth/google/callback": {
+            "get": {
+                "description": "Exchanges the OAuth code for user info and logs in the user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "OAuth state",
+                        "name": "state",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Handle Google login callback",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.googleLoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/google/login": {
+            "get": {
+                "description": "Redirects the user to Google OAuth login",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Start Google login",
+                "responses": {
+                    "307": {
+                        "description": "Temporary Redirect",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/param_exercises": {
             "get": {
                 "description": "Retrieves all param exercises",
@@ -137,6 +214,35 @@
         }
     },
     "definitions": {
+        "handler.googleLoginResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "display_name": {
+                    "type": "string",
+                    "example": "User Name"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "user@gmail.com"
+                },
+                "email_verified_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "last_login_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
         "handler.createParamExerciseRequest": {
             "type": "object",
             "properties": {

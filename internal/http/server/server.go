@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func New(h *handler.ParamExerciseHandler) http.Handler {
+func New(h *handler.ParamExerciseHandler, authHandler *handler.AuthHandler) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -31,6 +31,8 @@ func New(h *handler.ParamExerciseHandler) http.Handler {
 	})
 
 	r.Route("/v1", func(r chi.Router) {
+		r.Get("/auth/google/login", authHandler.StartGoogleLogin)
+		r.Get("/auth/google/callback", authHandler.HandleGoogleCallback)
 		r.Post("/param_exercises", h.CreateParamExercise)
 		r.Get("/param_exercises", h.GetParamExercises)
 		r.Get("/param_exercises/{id}", h.GetParamExerciseByID)

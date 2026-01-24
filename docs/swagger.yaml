@@ -1,5 +1,26 @@
 basePath: /
 definitions:
+  handler.googleLoginResponse:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.png
+        type: string
+      display_name:
+        example: User Name
+        type: string
+      email:
+        example: user@gmail.com
+        type: string
+      email_verified_at:
+        format: date-time
+        type: string
+      id:
+        example: 1
+        type: integer
+      last_login_at:
+        format: date-time
+        type: string
+    type: object
   handler.createParamExerciseRequest:
     properties:
       icon_url:
@@ -40,6 +61,57 @@ info:
   title: Workout Ledger API
   version: "1.0"
 paths:
+  /v1/auth/google/callback:
+    get:
+      description: Exchanges the OAuth code for user info and logs in the user
+      parameters:
+      - description: OAuth code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: OAuth state
+        in: query
+        name: state
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.googleLoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      summary: Handle Google login callback
+      tags:
+      - auth
+  /v1/auth/google/login:
+    get:
+      description: Redirects the user to Google OAuth login
+      responses:
+        "307":
+          description: Temporary Redirect
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      summary: Start Google login
+      tags:
+      - auth
   /v1/param_exercises:
     get:
       description: Retrieves all param exercises
