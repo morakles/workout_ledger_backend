@@ -51,14 +51,22 @@ type googleTokenResponse struct {
 	IDToken     string `json:"id_token"`
 }
 
-// swagger:response googleLoginResponse
-type googleLoginResponse struct {
+type authUserResponse struct {
 	ID              int64      `json:"id" example:"1"`
 	Email           string     `json:"email" example:"user@gmail.com"`
 	DisplayName     string     `json:"display_name,omitempty" example:"User Name"`
 	AvatarURL       string     `json:"avatar_url,omitempty" example:"https://example.com/avatar.png"`
 	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty" format:"date-time"`
 	LastLoginAt     *time.Time `json:"last_login_at,omitempty" format:"date-time"`
+}
+
+// swagger:response googleLoginResponse
+type googleLoginResponse struct {
+	User         authUserResponse `json:"user"`
+	AccessToken  string           `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	RefreshToken string           `json:"refresh_token" example:"refresh_token_value"`
+	TokenType    string           `json:"token_type" example:"Bearer"`
+	ExpiresIn    int64            `json:"expires_in" example:"900"`
 }
 
 // StartGoogleLogin godoc
@@ -160,13 +168,26 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	tokens, err := h.svc.IssueTokens(r.Context(), user, "google")
+	if err != nil {
+		status, apiErr := presenter.StatusAndError(err)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
 	writeJSON(w, http.StatusOK, googleLoginResponse{
-		ID:              user.ID,
-		Email:           user.Email,
-		DisplayName:     user.DisplayName,
-		AvatarURL:       user.AvatarURL,
-		EmailVerifiedAt: user.EmailVerifiedAt,
-		LastLoginAt:     user.LastLoginAt,
+		User: authUserResponse{
+			ID:              user.ID,
+			Email:           user.Email,
+			DisplayName:     user.DisplayName,
+			AvatarURL:       user.AvatarURL,
+			EmailVerifiedAt: user.EmailVerifiedAt,
+			LastLoginAt:     user.LastLoginAt,
+		},
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+		TokenType:    tokens.TokenType,
+		ExpiresIn:    tokens.ExpiresIn,
 	})
 }
 

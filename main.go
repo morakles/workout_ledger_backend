@@ -16,6 +16,9 @@ import (
 // @title           Workout Ledger API
 // @version         1.0
 // @description     Simple REST API for Workout Ledger.
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 // @BasePath        /
 func main() {
 
