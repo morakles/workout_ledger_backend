@@ -63,3 +63,27 @@ func TestJWTAuthInvalidToken(t *testing.T) {
 		t.Fatalf("expected AUTH_INVALID_TOKEN, got %s", body.Code)
 	}
 }
+
+func TestJWTAuthAcceptsRawToken(t *testing.T) {
+	manager, err := token.NewManager("secret", 15*time.Minute, 30*24*time.Hour)
+	if err != nil {
+		t.Fatalf("expected manager, got error: %v", err)
+	}
+	now := time.Now().UTC()
+	accessToken, _, err := manager.CreateAccessToken(42, "user@example.com", "google", now)
+	if err != nil {
+		t.Fatalf("expected access token, got error: %v", err)
+	}
+	handler := JWTAuth(manager)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	req := httptest.NewRequest(http.MethodGet, "/v1/param_exercises", nil)
+	req.Header.Set("Authorization", accessToken)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+}

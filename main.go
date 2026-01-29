@@ -19,6 +19,7 @@ import (
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+// @description Authorization header; you may paste the token directly or use "Bearer <token>".
 // @BasePath        /
 func main() {
 

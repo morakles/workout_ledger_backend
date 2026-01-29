@@ -30,11 +30,15 @@ func JWTAuth(tokenManager *token.Manager) func(http.Handler) http.Handler {
 				respondAuthError(w, authDomain.ErrMissingToken)
 				return
 			}
-			if !strings.HasPrefix(authHeader, "Bearer ") {
+			rawToken := ""
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				rawToken = strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+			} else if !strings.Contains(authHeader, " ") {
+				rawToken = authHeader
+			} else {
 				respondAuthError(w, authDomain.ErrInvalidToken)
 				return
 			}
-			rawToken := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 			if rawToken == "" {
 				respondAuthError(w, authDomain.ErrMissingToken)
 				return

@@ -426,6 +426,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
+            "description": "Authorization header; you may paste the token directly or use \"Bearer <token>\".",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

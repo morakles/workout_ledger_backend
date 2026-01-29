@@ -277,6 +277,7 @@ paths:
       - param_exercises
 securityDefinitions:
   BearerAuth:
+    description: Authorization header; you may paste the token directly or use "Bearer <token>".
     in: header
     name: Authorization
     type: apiKey

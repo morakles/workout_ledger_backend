@@ -422,7 +422,8 @@
         "BearerAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header"
+            "in": "header",
+            "description": "Authorization header; you may paste the token directly or use \"Bearer <token>\"."
         }
     }
 }
