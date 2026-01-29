@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  handler.googleLoginResponse:
+  handler.authUserResponse:
     properties:
       avatar_url:
         example: https://example.com/avatar.png
@@ -20,6 +20,46 @@ definitions:
       last_login_at:
         format: date-time
         type: string
+    type: object
+  handler.googleLoginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: refresh_token_value
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+      user:
+        $ref: '#/definitions/handler.authUserResponse'
+    type: object
+  handler.refreshTokenRequest:
+    properties:
+      refresh_token:
+        example: refresh_token_value
+        type: string
+    type: object
+  handler.refreshTokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: refresh_token_value
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+      user:
+        $ref: '#/definitions/handler.authUserResponse'
     type: object
   handler.createParamExerciseRequest:
     properties:
@@ -61,6 +101,40 @@ info:
   title: Workout Ledger API
   version: "1.0"
 paths:
+  /v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchanges a refresh token for a new access token
+      parameters:
+      - description: payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.refreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.refreshTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      summary: Refresh access token
+      tags:
+      - auth
   /v1/auth/google/callback:
     get:
       description: Exchanges the OAuth code for user info and logs in the user
@@ -128,6 +202,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
       summary: Get param exercises
       tags:
       - param_exercises
@@ -161,6 +237,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
       summary: Create param exercise
       tags:
       - param_exercises
@@ -192,7 +270,15 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
       summary: Get param exercise by ID
       tags:
       - param_exercises
+securityDefinitions:
+  BearerAuth:
+    description: Authorization header; you may paste the token directly or use "Bearer <token>".
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

@@ -18,3 +18,10 @@ type UserDTO struct {
 	EmailVerifiedAt *time.Time
 	LastLoginAt     *time.Time
 }
+
+type TokenPair struct {
+	AccessToken  string
+	RefreshToken string
+	TokenType    string
+	ExpiresIn    int64
+}

@@ -264,3 +264,110 @@ func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile
 	}
 	return user, nil
 }
+
+func (r *AuthRepo) CreateRefreshToken(ctx context.Context, token authDomain.RefreshToken) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`INSERT INTO auth_refresh_tokens (user_id, token_hash, issued_at, expires_at, created_at)
+		 VALUES ($1, $2, $3, $4, $5)`,
+		token.UserID,
+		token.TokenHash,
+		token.IssuedAt,
+		token.ExpiresAt,
+		token.CreatedAt,
+	)
+	return err
+}
+
+func (r *AuthRepo) FindRefreshTokenByHash(ctx context.Context, tokenHash string) (authDomain.RefreshToken, bool, error) {
+	var token authDomain.RefreshToken
+	var revokedAt sql.NullTime
+	err := r.db.QueryRowContext(
+		ctx,
+		`SELECT id, user_id, token_hash, issued_at, expires_at, revoked_at, created_at
+		 FROM auth_refresh_tokens
+		 WHERE token_hash = $1`,
+		tokenHash,
+	).Scan(&token.ID, &token.UserID, &token.TokenHash, &token.IssuedAt, &token.ExpiresAt, &revokedAt, &token.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return authDomain.RefreshToken{}, false, nil
+	}
+	if err != nil {
+		return authDomain.RefreshToken{}, false, err
+	}
+	if revokedAt.Valid {
+		token.RevokedAt = &revokedAt.Time
+	}
+	return token, true, nil
+}
+
+func (r *AuthRepo) RotateRefreshToken(ctx context.Context, tokenID int64, revokedAt time.Time, newToken authDomain.RefreshToken) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	_, err = tx.ExecContext(
+		ctx,
+		`UPDATE auth_refresh_tokens
+		 SET revoked_at = $1
+		 WHERE id = $2 AND revoked_at IS NULL`,
+		revokedAt,
+		tokenID,
+	)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(
+		ctx,
+		`INSERT INTO auth_refresh_tokens (user_id, token_hash, issued_at, expires_at, created_at)
+		 VALUES ($1, $2, $3, $4, $5)`,
+		newToken.UserID,
+		newToken.TokenHash,
+		newToken.IssuedAt,
+		newToken.ExpiresAt,
+		newToken.CreatedAt,
+	)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (r *AuthRepo) GetUserByID(ctx context.Context, userID int64) (authDomain.User, error) {
+	var user authDomain.User
+	var displayName sql.NullString
+	var avatarURL sql.NullString
+	var emailVerifiedAt sql.NullTime
+	var lastLoginAt sql.NullTime
+	err := r.db.QueryRowContext(
+		ctx,
+		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at
+		 FROM param_users
+		 WHERE id = $1`,
+		userID,
+	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt)
+	if err != nil {
+		return authDomain.User{}, err
+	}
+	if displayName.Valid {
+		user.DisplayName = displayName.String
+	}
+	if avatarURL.Valid {
+		user.AvatarURL = avatarURL.String
+	}
+	if emailVerifiedAt.Valid {
+		t := emailVerifiedAt.Time
+		user.EmailVerifiedAt = &t
+	}
+	if lastLoginAt.Valid {
+		t := lastLoginAt.Time
+		user.LastLoginAt = &t
+	}
+	return user, nil
+}

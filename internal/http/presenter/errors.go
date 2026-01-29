@@ -30,6 +30,16 @@ func StatusAndError(err error) (int, APIError) {
 		return http.StatusUnauthorized, APIError{Code: "UNAUTHORIZED", Message: "Unauthorized"}
 	case errors.Is(err, authDomain.ErrStateMismatch):
 		return http.StatusBadRequest, APIError{Code: "STATE_MISMATCH", Message: "OAuth state mismatch"}
+	case errors.Is(err, authDomain.ErrMissingToken):
+		return http.StatusUnauthorized, APIError{Code: "AUTH_MISSING_TOKEN", Message: "Missing authentication token"}
+	case errors.Is(err, authDomain.ErrInvalidToken):
+		return http.StatusUnauthorized, APIError{Code: "AUTH_INVALID_TOKEN", Message: "Invalid authentication token"}
+	case errors.Is(err, authDomain.ErrTokenExpired):
+		return http.StatusUnauthorized, APIError{Code: "AUTH_TOKEN_EXPIRED", Message: "Authentication token expired"}
+	case errors.Is(err, authDomain.ErrRefreshInvalid):
+		return http.StatusUnauthorized, APIError{Code: "AUTH_REFRESH_INVALID", Message: "Refresh token is invalid"}
+	case errors.Is(err, authDomain.ErrRefreshExpired):
+		return http.StatusUnauthorized, APIError{Code: "AUTH_REFRESH_EXPIRED", Message: "Refresh token expired"}
 	default:
 		return http.StatusInternalServerError, APIError{Code: "INTERNAL", Message: "Internal server error"}
 	}
