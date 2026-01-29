@@ -2,7 +2,9 @@ package server
 
 import (
 	"net/http"
+	token "workout_ledger/internal/auth"
 	"workout_ledger/internal/http/handler"
+	authmiddleware "workout_ledger/internal/http/middleware"
 
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
@@ -10,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func New(h *handler.ParamExerciseHandler) http.Handler {
+func New(h *handler.ParamExerciseHandler, authHandler *handler.AuthHandler, tokenManager *token.Manager) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -31,9 +33,16 @@ func New(h *handler.ParamExerciseHandler) http.Handler {
 	})
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Post("/param_exercises", h.CreateParamExercise)
-		r.Get("/param_exercises", h.GetParamExercises)
-		r.Get("/param_exercises/{id}", h.GetParamExerciseByID)
+		r.Get("/auth/google/login", authHandler.StartGoogleLogin)
+		r.Get("/auth/google/callback", authHandler.HandleGoogleCallback)
+		r.Post("/auth/refresh", authHandler.RefreshToken)
+
+		r.Group(func(r chi.Router) {
+			r.Use(authmiddleware.JWTAuth(tokenManager))
+			r.Post("/param_exercises", h.CreateParamExercise)
+			r.Get("/param_exercises", h.GetParamExercises)
+			r.Get("/param_exercises/{id}", h.GetParamExerciseByID)
+		})
 	})
 	return r
 }

@@ -2,9 +2,11 @@ package config
 
 import (
 	"net/http"
+	token "workout_ledger/internal/auth"
 	"workout_ledger/internal/db"
 	"workout_ledger/internal/http/handler"
 	"workout_ledger/internal/http/server"
+	auth_uc "workout_ledger/internal/usecase/auth"
 	param_exercise_uc "workout_ledger/internal/usecase/param_exercise"
 	"workout_ledger/repository/postgres"
 )
@@ -24,7 +26,25 @@ func New(cfg Config) (*App, error) {
 	svc := param_exercise_uc.NewParamExerciseService(repo)
 	h := handler.NewParamExerciseHandler(svc)
 
-	httpHandler := server.New(h)
+	tokenManager, err := token.NewManager(cfg.JWT.Secret, cfg.JWT.AccessTTL, cfg.JWT.RefreshTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	authRepo := postgres.NewAuthRepo(pool)
+	authSvc := auth_uc.NewAuthService(authRepo, tokenManager)
+	var googleOAuthConfig *handler.GoogleOAuthConfig
+	if cfg.GoogleOAuth != nil {
+		googleOAuthConfig = &handler.GoogleOAuthConfig{
+			ClientID:      cfg.GoogleOAuth.ClientID,
+			ClientSecret:  cfg.GoogleOAuth.ClientSecret,
+			RedirectURL:   cfg.GoogleOAuth.RedirectURL,
+			AllowedDomain: cfg.GoogleOAuth.AllowedDomain,
+		}
+	}
+	authHandler := handler.NewAuthHandler(authSvc, googleOAuthConfig)
+
+	httpHandler := server.New(h, authHandler, tokenManager)
 
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddress,

@@ -68,6 +68,7 @@ type paramExerciseResponse struct {
 // @Tags         param_exercises
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        request  body      createParamExerciseRequest  true  "payload"
 // @Success      201      {object}  createParamExerciseResponse
 // @Failure      400      {object}  presenter.APIError
@@ -103,6 +104,7 @@ func (h *ParamExerciseHandler) CreateParamExercise(w http.ResponseWriter, r *htt
 // @Description  Retrieves all param exercises
 // @Tags         param_exercises
 // @Produce      json
+// @Security     BearerAuth
 // @Success      200  {array}   paramExerciseResponse
 // @Failure      500  {object}  presenter.APIError
 // @Router       /v1/param_exercises [get]
@@ -131,6 +133,7 @@ func (h *ParamExerciseHandler) GetParamExercises(w http.ResponseWriter, r *http.
 // @Description  Retrieves a param exercise by ID
 // @Tags         param_exercises
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id   path      int  true  "Param exercise ID"
 // @Success      200  {object}  paramExerciseResponse
 // @Failure      400  {object}  presenter.APIError

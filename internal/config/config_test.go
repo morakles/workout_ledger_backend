@@ -26,6 +26,7 @@ func TestGetEnvReturnsValueWhenSet(t *testing.T) {
 
 func TestLoadReturnsErrorWhenDSNMissing(t *testing.T) {
 	t.Setenv("POSTGRES_DSN", "")
+	t.Setenv("JWT_SECRET", "test-secret")
 
 	_, err := Load()
 
@@ -37,6 +38,7 @@ func TestLoadReturnsErrorWhenDSNMissing(t *testing.T) {
 func TestLoadUsesDefaultsAndEnvValues(t *testing.T) {
 	t.Setenv("POSTGRES_DSN", "postgres://user:pass@localhost:5432/db")
 	t.Setenv("HTTP_ADDR", ":9090")
+	t.Setenv("JWT_SECRET", "test-secret")
 
 	cfg, err := Load()
 
