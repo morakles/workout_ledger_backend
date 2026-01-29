@@ -33,6 +33,8 @@ func New(h *handler.ParamExerciseHandler, authHandler *handler.AuthHandler, toke
 	})
 
 	r.Route("/v1", func(r chi.Router) {
+		r.Post("/auth/register", authHandler.Register)
+		r.Post("/auth/login", authHandler.Login)
 		r.Get("/auth/google/login", authHandler.StartGoogleLogin)
 		r.Get("/auth/google/callback", authHandler.HandleGoogleCallback)
 		r.Post("/auth/refresh", authHandler.RefreshToken)

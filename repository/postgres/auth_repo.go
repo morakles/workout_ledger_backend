@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 	authDomain "workout_ledger/domain/auth"
 	authUC "workout_ledger/internal/usecase/auth"
@@ -54,7 +55,10 @@ func (r *AuthRepo) UpsertGoogleUser(ctx context.Context, profile authUC.GooglePr
 	}
 
 	now := time.Now().UTC()
-	user, err = updateUserFromGoogle(ctx, tx, user.ID, profile, now)
+	// If a local account logs in via Google with the same email, keep the local login
+	// while linking Google by promoting the provider to LOCAL_GOOGLE.
+	authProvider := mergeAuthProvider(user.AuthProvider, authDomain.AuthProviderGoogle)
+	user, err = updateUserFromGoogle(ctx, tx, user.ID, profile, authProvider, now)
 	if err != nil {
 		return authDomain.User{}, err
 	}
@@ -84,16 +88,18 @@ func findUserByIdentity(ctx context.Context, tx *sql.Tx, providerID int64, provi
 	var avatarURL sql.NullString
 	var emailVerifiedAt sql.NullTime
 	var lastLoginAt sql.NullTime
+	var authProvider sql.NullString
+	var passwordHash sql.NullString
 
 	err := tx.QueryRowContext(
 		ctx,
-		`SELECT u.id, u.email, u.display_name, u.avatar_url, u.email_verified_at, u.last_login_at
+		`SELECT u.id, u.email, u.display_name, u.avatar_url, u.email_verified_at, u.last_login_at, u.auth_provider, u.password_hash
 		 FROM auth_identities ai
 		 JOIN param_users u ON u.id = ai.user_id
 		 WHERE ai.auth_provider_id = $1 AND ai.provider_user_id = $2`,
 		providerID,
 		providerUserID,
-	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt)
+	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt, &authProvider, &passwordHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return authDomain.User{}, false, nil
 	}
@@ -114,6 +120,12 @@ func findUserByIdentity(ctx context.Context, tx *sql.Tx, providerID int64, provi
 	if lastLoginAt.Valid {
 		t := lastLoginAt.Time
 		user.LastLoginAt = &t
+	}
+	if authProvider.Valid {
+		user.AuthProvider = authProvider.String
+	}
+	if passwordHash.Valid {
+		user.PasswordHash = &passwordHash.String
 	}
 	return user, true, nil
 }
@@ -124,13 +136,15 @@ func findUserByEmail(ctx context.Context, tx *sql.Tx, email string) (authDomain.
 	var avatarURL sql.NullString
 	var emailVerifiedAt sql.NullTime
 	var lastLoginAt sql.NullTime
+	var authProvider sql.NullString
+	var passwordHash sql.NullString
 
 	err := tx.QueryRowContext(
 		ctx,
-		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at
+		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at, auth_provider, password_hash
 		 FROM param_users WHERE email = $1`,
 		email,
-	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt)
+	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt, &authProvider, &passwordHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return authDomain.User{}, false, nil
 	}
@@ -151,6 +165,12 @@ func findUserByEmail(ctx context.Context, tx *sql.Tx, email string) (authDomain.
 	if lastLoginAt.Valid {
 		t := lastLoginAt.Time
 		user.LastLoginAt = &t
+	}
+	if authProvider.Valid {
+		user.AuthProvider = authProvider.String
+	}
+	if passwordHash.Valid {
+		user.PasswordHash = &passwordHash.String
 	}
 	return user, true, nil
 }
@@ -170,18 +190,23 @@ func createUser(ctx context.Context, tx *sql.Tx, profile authUC.GoogleProfile) (
 	if profile.AvatarURL != "" {
 		avatarURL = sql.NullString{String: profile.AvatarURL, Valid: true}
 	}
+	authProvider := authDomain.AuthProviderGoogle
+	var authProviderResult sql.NullString
+	var passwordHash sql.NullString
 
 	err := tx.QueryRowContext(
 		ctx,
-		`INSERT INTO param_users (email, email_verified_at, display_name, avatar_url, last_login_at)
-		 VALUES ($1, $2, $3, $4, $5)
-		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at`,
+		`INSERT INTO param_users (email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider, password_hash)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider, password_hash`,
 		profile.Email,
 		emailVerifiedAt,
 		displayName,
 		avatarURL,
 		now,
-	).Scan(&user.ID, &user.Email, &emailVerifiedAt, &displayName, &avatarURL, &user.LastLoginAt)
+		authProvider,
+		sql.NullString{},
+	).Scan(&user.ID, &user.Email, &emailVerifiedAt, &displayName, &avatarURL, &user.LastLoginAt, &authProviderResult, &passwordHash)
 	if err != nil {
 		return authDomain.User{}, err
 	}
@@ -193,6 +218,14 @@ func createUser(ctx context.Context, tx *sql.Tx, profile authUC.GoogleProfile) (
 	}
 	if avatarURL.Valid {
 		user.AvatarURL = avatarURL.String
+	}
+	if authProviderResult.Valid {
+		user.AuthProvider = authProviderResult.String
+	} else {
+		user.AuthProvider = authProvider
+	}
+	if passwordHash.Valid {
+		user.PasswordHash = &passwordHash.String
 	}
 	return user, nil
 }
@@ -210,7 +243,7 @@ func createAuthIdentity(ctx context.Context, tx *sql.Tx, providerID, userID int6
 	return err
 }
 
-func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile authUC.GoogleProfile, now time.Time) (authDomain.User, error) {
+func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile authUC.GoogleProfile, authProvider string, now time.Time) (authDomain.User, error) {
 	var displayName sql.NullString
 	if profile.DisplayName != "" {
 		displayName = sql.NullString{String: profile.DisplayName, Valid: true}
@@ -229,6 +262,8 @@ func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile
 	var displayNameResult sql.NullString
 	var avatarURLResult sql.NullString
 	var lastLoginAt sql.NullTime
+	var authProviderResult sql.NullString
+	var passwordHash sql.NullString
 	err := tx.QueryRowContext(
 		ctx,
 		`UPDATE param_users
@@ -236,17 +271,19 @@ func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile
 		     email_verified_at = COALESCE($2, email_verified_at),
 		     display_name = COALESCE($3, display_name),
 		     avatar_url = COALESCE($4, avatar_url),
-		     updated_at = $5,
-		     last_login_at = $5
-		 WHERE id = $6
-		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at`,
+		     auth_provider = $5,
+		     updated_at = $6,
+		     last_login_at = $6
+		 WHERE id = $7
+		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider, password_hash`,
 		profile.Email,
 		emailVerifiedAt,
 		displayName,
 		avatarURL,
+		authProvider,
 		now,
 		userID,
-	).Scan(&user.ID, &user.Email, &emailVerifiedAtResult, &displayNameResult, &avatarURLResult, &lastLoginAt)
+	).Scan(&user.ID, &user.Email, &emailVerifiedAtResult, &displayNameResult, &avatarURLResult, &lastLoginAt, &authProviderResult, &passwordHash)
 	if err != nil {
 		return authDomain.User{}, err
 	}
@@ -261,6 +298,12 @@ func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile
 	}
 	if lastLoginAt.Valid {
 		user.LastLoginAt = &lastLoginAt.Time
+	}
+	if authProviderResult.Valid {
+		user.AuthProvider = authProviderResult.String
+	}
+	if passwordHash.Valid {
+		user.PasswordHash = &passwordHash.String
 	}
 	return user, nil
 }
@@ -345,13 +388,15 @@ func (r *AuthRepo) GetUserByID(ctx context.Context, userID int64) (authDomain.Us
 	var avatarURL sql.NullString
 	var emailVerifiedAt sql.NullTime
 	var lastLoginAt sql.NullTime
+	var authProvider sql.NullString
+	var passwordHash sql.NullString
 	err := r.db.QueryRowContext(
 		ctx,
-		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at
+		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at, auth_provider, password_hash
 		 FROM param_users
 		 WHERE id = $1`,
 		userID,
-	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt)
+	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt, &authProvider, &passwordHash)
 	if err != nil {
 		return authDomain.User{}, err
 	}
@@ -369,5 +414,128 @@ func (r *AuthRepo) GetUserByID(ctx context.Context, userID int64) (authDomain.Us
 		t := lastLoginAt.Time
 		user.LastLoginAt = &t
 	}
+	if authProvider.Valid {
+		user.AuthProvider = authProvider.String
+	}
+	if passwordHash.Valid {
+		user.PasswordHash = &passwordHash.String
+	}
 	return user, nil
+}
+
+func (r *AuthRepo) CreateLocalUser(ctx context.Context, email, passwordHash string, now time.Time) (authDomain.User, error) {
+	var user authDomain.User
+	var displayName sql.NullString
+	var avatarURL sql.NullString
+	var emailVerifiedAt sql.NullTime
+	var lastLoginAt sql.NullTime
+	var authProvider sql.NullString
+	var storedPasswordHash sql.NullString
+	err := r.db.QueryRowContext(
+		ctx,
+		`INSERT INTO param_users (email, password_hash, auth_provider, last_login_at)
+		 VALUES ($1, $2, $3, $4)
+		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider, password_hash`,
+		email,
+		passwordHash,
+		authDomain.AuthProviderLocal,
+		now,
+	).Scan(&user.ID, &user.Email, &emailVerifiedAt, &displayName, &avatarURL, &lastLoginAt, &authProvider, &storedPasswordHash)
+	if err != nil {
+		return authDomain.User{}, err
+	}
+	if emailVerifiedAt.Valid {
+		user.EmailVerifiedAt = &emailVerifiedAt.Time
+	}
+	if displayName.Valid {
+		user.DisplayName = displayName.String
+	}
+	if avatarURL.Valid {
+		user.AvatarURL = avatarURL.String
+	}
+	if lastLoginAt.Valid {
+		user.LastLoginAt = &lastLoginAt.Time
+	}
+	if authProvider.Valid {
+		user.AuthProvider = authProvider.String
+	}
+	if storedPasswordHash.Valid {
+		user.PasswordHash = &storedPasswordHash.String
+	}
+	return user, nil
+}
+
+func (r *AuthRepo) FindUserByEmail(ctx context.Context, email string) (authDomain.User, bool, error) {
+	var user authDomain.User
+	var displayName sql.NullString
+	var avatarURL sql.NullString
+	var emailVerifiedAt sql.NullTime
+	var lastLoginAt sql.NullTime
+	var authProvider sql.NullString
+	var passwordHash sql.NullString
+
+	err := r.db.QueryRowContext(
+		ctx,
+		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at, auth_provider, password_hash
+		 FROM param_users WHERE email = $1`,
+		email,
+	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt, &authProvider, &passwordHash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return authDomain.User{}, false, nil
+	}
+	if err != nil {
+		return authDomain.User{}, false, err
+	}
+	if displayName.Valid {
+		user.DisplayName = displayName.String
+	}
+	if avatarURL.Valid {
+		user.AvatarURL = avatarURL.String
+	}
+	if emailVerifiedAt.Valid {
+		t := emailVerifiedAt.Time
+		user.EmailVerifiedAt = &t
+	}
+	if lastLoginAt.Valid {
+		t := lastLoginAt.Time
+		user.LastLoginAt = &t
+	}
+	if authProvider.Valid {
+		user.AuthProvider = authProvider.String
+	}
+	if passwordHash.Valid {
+		user.PasswordHash = &passwordHash.String
+	}
+	return user, true, nil
+}
+
+func (r *AuthRepo) UpdateLastLogin(ctx context.Context, userID int64, now time.Time) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`UPDATE param_users
+		 SET last_login_at = $1,
+		     updated_at = $1
+		 WHERE id = $2`,
+		now,
+		userID,
+	)
+	return err
+}
+
+func mergeAuthProvider(existing, incoming string) string {
+	existing = strings.ToUpper(strings.TrimSpace(existing))
+	incoming = strings.ToUpper(strings.TrimSpace(incoming))
+	if existing == authDomain.AuthProviderLocal && incoming == authDomain.AuthProviderGoogle {
+		return authDomain.AuthProviderLocalGoogle
+	}
+	if existing == authDomain.AuthProviderLocalGoogle {
+		return authDomain.AuthProviderLocalGoogle
+	}
+	if incoming == authDomain.AuthProviderGoogle {
+		return authDomain.AuthProviderGoogle
+	}
+	if existing != "" {
+		return existing
+	}
+	return incoming
 }

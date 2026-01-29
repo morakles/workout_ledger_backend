@@ -9,4 +9,12 @@ type User struct {
 	AvatarURL       string
 	EmailVerifiedAt *time.Time
 	LastLoginAt     *time.Time
+	AuthProvider    string
+	PasswordHash    *string
 }
+
+const (
+	AuthProviderLocal       = "LOCAL"
+	AuthProviderGoogle      = "GOOGLE"
+	AuthProviderLocalGoogle = "LOCAL_GOOGLE"
+)

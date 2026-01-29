@@ -168,7 +168,7 @@ func (h *AuthHandler) HandleGoogleCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	tokens, err := h.svc.IssueTokens(r.Context(), user, "google")
+	tokens, err := h.svc.IssueTokens(r.Context(), user)
 	if err != nil {
 		status, apiErr := presenter.StatusAndError(err)
 		writeJSON(w, status, apiErr)
