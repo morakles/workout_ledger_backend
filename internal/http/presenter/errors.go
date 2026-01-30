@@ -5,6 +5,7 @@ import (
 	"net/http"
 	authDomain "workout_ledger/domain/auth"
 	paramExerciseDomain "workout_ledger/domain/param_exercise"
+	paramWorkoutDomain "workout_ledger/domain/param_workout"
 )
 
 type APIError struct {
@@ -23,6 +24,12 @@ func StatusAndError(err error) (int, APIError) {
 	case errors.Is(err, paramExerciseDomain.ErrWorkoutNotActive):
 		return http.StatusConflict, APIError{Code: "WORKOUT_NOT_ACTIVE", Message: "Workout is not active"}
 	case errors.Is(err, paramExerciseDomain.ErrConflict):
+		return http.StatusConflict, APIError{Code: "CONFLICT", Message: "Conflict"}
+	case errors.Is(err, paramWorkoutDomain.ErrInvalidInput):
+		return http.StatusBadRequest, APIError{Code: "INVALID_INPUT", Message: "Invalid input"}
+	case errors.Is(err, paramWorkoutDomain.ErrNotFound):
+		return http.StatusNotFound, APIError{Code: "NOT_FOUND", Message: "Not found"}
+	case errors.Is(err, paramWorkoutDomain.ErrConflict):
 		return http.StatusConflict, APIError{Code: "CONFLICT", Message: "Conflict"}
 	case errors.Is(err, authDomain.ErrInvalidInput):
 		return http.StatusBadRequest, APIError{Code: "INVALID_INPUT", Message: "Invalid input"}
