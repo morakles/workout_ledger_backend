@@ -28,6 +28,8 @@ func StatusAndError(err error) (int, APIError) {
 		return http.StatusBadRequest, APIError{Code: "INVALID_INPUT", Message: "Invalid input"}
 	case errors.Is(err, authDomain.ErrUnauthorized):
 		return http.StatusUnauthorized, APIError{Code: "UNAUTHORIZED", Message: "Unauthorized"}
+	case errors.Is(err, authDomain.ErrConflict):
+		return http.StatusConflict, APIError{Code: "CONFLICT", Message: "Conflict"}
 	case errors.Is(err, authDomain.ErrStateMismatch):
 		return http.StatusBadRequest, APIError{Code: "STATE_MISMATCH", Message: "OAuth state mismatch"}
 	case errors.Is(err, authDomain.ErrMissingToken):

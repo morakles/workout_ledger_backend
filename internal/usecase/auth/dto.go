@@ -17,6 +17,7 @@ type UserDTO struct {
 	AvatarURL       string
 	EmailVerifiedAt *time.Time
 	LastLoginAt     *time.Time
+	AuthProvider    string
 }
 
 type TokenPair struct {
