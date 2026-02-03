@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	authDomain "workout_ledger/domain/auth"
 	param_workout "workout_ledger/domain/param_workout"
+	authmiddleware "workout_ledger/internal/http/middleware"
 	"workout_ledger/internal/http/presenter"
 	param_workout_uc "workout_ledger/internal/usecase/param_workout"
 
@@ -77,8 +79,15 @@ func (h *ParamWorkoutHandler) CreateParamWorkout(w http.ResponseWriter, r *http.
 	}
 
 	_ = json.NewDecoder(r.Body).Decode(&body)
+	userID, ok := authmiddleware.UserIDFromContext(r.Context())
+	if !ok || userID <= 0 {
+		status, apiErr := presenter.StatusAndError(authDomain.ErrUnauthorized)
+		writeJSON(w, status, apiErr)
+		return
+	}
 
 	res, err := h.svc.CreateParamWorkout(r.Context(), param_workout_uc.CreateParamWorkoutDTO{
+		UserID:                 userID,
 		Name:                   body.Name,
 		NumberOfSets:           body.NumberOfSets,
 		RestBetweenSetsSeconds: body.RestBetweenSetsSeconds,
@@ -107,7 +116,13 @@ func (h *ParamWorkoutHandler) CreateParamWorkout(w http.ResponseWriter, r *http.
 // @Failure      500  {object}  presenter.APIError
 // @Router       /v1/param_workouts [get]
 func (h *ParamWorkoutHandler) GetParamWorkouts(w http.ResponseWriter, r *http.Request) {
-	workouts, err := h.svc.GetParamWorkouts(r.Context())
+	userID, ok := authmiddleware.UserIDFromContext(r.Context())
+	if !ok || userID <= 0 {
+		status, apiErr := presenter.StatusAndError(authDomain.ErrUnauthorized)
+		writeJSON(w, status, apiErr)
+		return
+	}
+	workouts, err := h.svc.GetParamWorkouts(r.Context(), userID)
 	if err != nil {
 		status, apiErr := presenter.StatusAndError(err)
 		writeJSON(w, status, apiErr)
@@ -148,7 +163,14 @@ func (h *ParamWorkoutHandler) GetParamWorkoutByID(w http.ResponseWriter, r *http
 		return
 	}
 
-	workout, err := h.svc.GetParamWorkoutByID(r.Context(), id)
+	userID, ok := authmiddleware.UserIDFromContext(r.Context())
+	if !ok || userID <= 0 {
+		status, apiErr := presenter.StatusAndError(authDomain.ErrUnauthorized)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
+	workout, err := h.svc.GetParamWorkoutByID(r.Context(), userID, id)
 	if err != nil {
 		status, apiErr := presenter.StatusAndError(err)
 		writeJSON(w, status, apiErr)

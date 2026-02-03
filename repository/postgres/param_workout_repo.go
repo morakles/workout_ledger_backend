@@ -25,9 +25,9 @@ func NewParamWorkoutRepo(db *sql.DB) *ParamWorkoutRepo {
 
 func (workoutRepo *ParamWorkoutRepo) CreateParamWorkout(ctx context.Context, workout param_workout.ParamWorkout) (param_workout.ParamWorkout, error) {
 	sqlInsert := workoutRepo.sb.Insert(workoutTableName).
-		Columns("name", "number_of_sets", "rest_between_sets").
-		Values(workout.Name, workout.NumberOfSets, sq.Expr("make_interval(secs => ?)", workout.RestBetweenSetsSeconds)).
-		Suffix("RETURNING id, name, number_of_sets, EXTRACT(EPOCH FROM rest_between_sets)::int AS rest_between_sets_seconds")
+		Columns("user_id", "workout_name", "number_of_sets", "rest_between_sets").
+		Values(workout.UserID, workout.Name, workout.NumberOfSets, sq.Expr("make_interval(secs => ?)", workout.RestBetweenSetsSeconds)).
+		Suffix("RETURNING id, user_id, workout_name, number_of_sets, EXTRACT(EPOCH FROM rest_between_sets)::int AS rest_between_sets_seconds")
 
 	sqlStr, args, err := sqlInsert.ToSql()
 	if err != nil {
@@ -37,6 +37,7 @@ func (workoutRepo *ParamWorkoutRepo) CreateParamWorkout(ctx context.Context, wor
 	var created param_workout.ParamWorkout
 	err = workoutRepo.db.QueryRowContext(ctx, sqlStr, args...).Scan(
 		&created.ID,
+		&created.UserID,
 		&created.Name,
 		&created.NumberOfSets,
 		&created.RestBetweenSetsSeconds,
@@ -51,15 +52,16 @@ func (workoutRepo *ParamWorkoutRepo) CreateParamWorkout(ctx context.Context, wor
 	return created, nil
 }
 
-func (workoutRepo *ParamWorkoutRepo) GetParamWorkoutByID(ctx context.Context, id int64) (param_workout.ParamWorkout, error) {
+func (workoutRepo *ParamWorkoutRepo) GetParamWorkoutByID(ctx context.Context, userID, id int64) (param_workout.ParamWorkout, error) {
 	sqlSelect := workoutRepo.sb.Select(
 		"id",
-		"name",
+		"user_id",
+		"workout_name",
 		"number_of_sets",
 		"EXTRACT(EPOCH FROM rest_between_sets)::int AS rest_between_sets_seconds",
 	).
 		From(workoutTableName).
-		Where(sq.Eq{"id": id})
+		Where(sq.Eq{"id": id, "user_id": userID})
 
 	sqlStr, args, err := sqlSelect.ToSql()
 	if err != nil {
@@ -69,6 +71,7 @@ func (workoutRepo *ParamWorkoutRepo) GetParamWorkoutByID(ctx context.Context, id
 	var workout param_workout.ParamWorkout
 	err = workoutRepo.db.QueryRowContext(ctx, sqlStr, args...).Scan(
 		&workout.ID,
+		&workout.UserID,
 		&workout.Name,
 		&workout.NumberOfSets,
 		&workout.RestBetweenSetsSeconds,
@@ -83,14 +86,16 @@ func (workoutRepo *ParamWorkoutRepo) GetParamWorkoutByID(ctx context.Context, id
 	return workout, nil
 }
 
-func (workoutRepo *ParamWorkoutRepo) GetParamWorkouts(ctx context.Context) ([]param_workout.ParamWorkout, error) {
+func (workoutRepo *ParamWorkoutRepo) GetParamWorkouts(ctx context.Context, userID int64) ([]param_workout.ParamWorkout, error) {
 	sqlSelect := workoutRepo.sb.Select(
 		"id",
-		"name",
+		"user_id",
+		"workout_name",
 		"number_of_sets",
 		"EXTRACT(EPOCH FROM rest_between_sets)::int AS rest_between_sets_seconds",
 	).
 		From(workoutTableName).
+		Where(sq.Eq{"user_id": userID}).
 		OrderBy("id")
 
 	sqlStr, args, err := sqlSelect.ToSql()
@@ -109,6 +114,7 @@ func (workoutRepo *ParamWorkoutRepo) GetParamWorkouts(ctx context.Context) ([]pa
 		var workout param_workout.ParamWorkout
 		if err := rows.Scan(
 			&workout.ID,
+			&workout.UserID,
 			&workout.Name,
 			&workout.NumberOfSets,
 			&workout.RestBetweenSetsSeconds,
