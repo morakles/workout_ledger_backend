@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func New(h *handler.ParamExerciseHandler, authHandler *handler.AuthHandler, tokenManager *token.Manager) http.Handler {
+func New(paramExerciseHandler *handler.ParamExerciseHandler, paramWorkoutHandler *handler.ParamWorkoutHandler, paramWorkoutExerciseHandler *handler.ParamWorkoutExerciseHandler, authHandler *handler.AuthHandler, tokenManager *token.Manager) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -41,9 +41,15 @@ func New(h *handler.ParamExerciseHandler, authHandler *handler.AuthHandler, toke
 
 		r.Group(func(r chi.Router) {
 			r.Use(authmiddleware.JWTAuth(tokenManager))
-			r.Post("/param_exercises", h.CreateParamExercise)
-			r.Get("/param_exercises", h.GetParamExercises)
-			r.Get("/param_exercises/{id}", h.GetParamExerciseByID)
+			r.Post("/param_exercises", paramExerciseHandler.CreateParamExercise)
+			r.Get("/param_exercises", paramExerciseHandler.GetParamExercises)
+			r.Get("/param_exercises/{id}", paramExerciseHandler.GetParamExerciseByID)
+			r.Post("/param_workouts", paramWorkoutHandler.CreateParamWorkout)
+			r.Get("/param_workouts", paramWorkoutHandler.GetParamWorkouts)
+			r.Get("/param_workouts/{id}", paramWorkoutHandler.GetParamWorkoutByID)
+			r.Post("/param_workouts/{workoutId}/exercises", paramWorkoutExerciseHandler.AddExerciseToWorkout)
+			r.Get("/param_workouts/{workoutId}/exercises", paramWorkoutExerciseHandler.ListWorkoutExercises)
+			r.Delete("/param_workouts/{workoutId}/exercises/{exerciseId}", paramWorkoutExerciseHandler.RemoveExerciseFromWorkout)
 		})
 	})
 	return r
