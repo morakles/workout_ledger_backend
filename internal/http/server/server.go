@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func New(paramExerciseHandler *handler.ParamExerciseHandler, paramWorkoutHandler *handler.ParamWorkoutHandler, authHandler *handler.AuthHandler, tokenManager *token.Manager) http.Handler {
+func New(paramExerciseHandler *handler.ParamExerciseHandler, paramWorkoutHandler *handler.ParamWorkoutHandler, paramWorkoutExerciseHandler *handler.ParamWorkoutExerciseHandler, authHandler *handler.AuthHandler, tokenManager *token.Manager) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -47,6 +47,9 @@ func New(paramExerciseHandler *handler.ParamExerciseHandler, paramWorkoutHandler
 			r.Post("/param_workouts", paramWorkoutHandler.CreateParamWorkout)
 			r.Get("/param_workouts", paramWorkoutHandler.GetParamWorkouts)
 			r.Get("/param_workouts/{id}", paramWorkoutHandler.GetParamWorkoutByID)
+			r.Post("/param_workouts/{workoutId}/exercises", paramWorkoutExerciseHandler.AddExerciseToWorkout)
+			r.Get("/param_workouts/{workoutId}/exercises", paramWorkoutExerciseHandler.ListWorkoutExercises)
+			r.Delete("/param_workouts/{workoutId}/exercises/{exerciseId}", paramWorkoutExerciseHandler.RemoveExerciseFromWorkout)
 		})
 	})
 	return r

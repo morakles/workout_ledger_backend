@@ -6,6 +6,7 @@ import (
 	authDomain "workout_ledger/domain/auth"
 	paramExerciseDomain "workout_ledger/domain/param_exercise"
 	paramWorkoutDomain "workout_ledger/domain/param_workout"
+	paramWorkoutExerciseDomain "workout_ledger/domain/param_workout_exercise"
 )
 
 type APIError struct {
@@ -30,6 +31,16 @@ func StatusAndError(err error) (int, APIError) {
 	case errors.Is(err, paramWorkoutDomain.ErrNotFound):
 		return http.StatusNotFound, APIError{Code: "NOT_FOUND", Message: "Not found"}
 	case errors.Is(err, paramWorkoutDomain.ErrConflict):
+		return http.StatusConflict, APIError{Code: "CONFLICT", Message: "Conflict"}
+	case errors.Is(err, paramWorkoutExerciseDomain.ErrInvalidInput):
+		return http.StatusBadRequest, APIError{Code: "INVALID_INPUT", Message: "Invalid input"}
+	case errors.Is(err, paramWorkoutExerciseDomain.ErrWorkoutNotFound):
+		return http.StatusNotFound, APIError{Code: "NOT_FOUND", Message: "Not found"}
+	case errors.Is(err, paramWorkoutExerciseDomain.ErrExerciseNotFound):
+		return http.StatusNotFound, APIError{Code: "NOT_FOUND", Message: "Not found"}
+	case errors.Is(err, paramWorkoutExerciseDomain.ErrAssignmentNotFound):
+		return http.StatusNotFound, APIError{Code: "NOT_FOUND", Message: "Not found"}
+	case errors.Is(err, paramWorkoutExerciseDomain.ErrConflict):
 		return http.StatusConflict, APIError{Code: "CONFLICT", Message: "Conflict"}
 	case errors.Is(err, authDomain.ErrInvalidInput):
 		return http.StatusBadRequest, APIError{Code: "INVALID_INPUT", Message: "Invalid input"}

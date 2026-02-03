@@ -9,6 +9,7 @@ import (
 	auth_uc "workout_ledger/internal/usecase/auth"
 	param_exercise_uc "workout_ledger/internal/usecase/param_exercise"
 	param_workout_uc "workout_ledger/internal/usecase/param_workout"
+	param_workout_exercise_uc "workout_ledger/internal/usecase/param_workout_exercise"
 	"workout_ledger/repository/postgres"
 )
 
@@ -31,6 +32,10 @@ func New(cfg Config) (*App, error) {
 	paramWorkoutSvc := param_workout_uc.NewParamWorkoutService(paramWorkoutRepo)
 	paramWorkoutHandler := handler.NewParamWorkoutHandler(paramWorkoutSvc)
 
+	paramWorkoutExerciseRepo := postgres.NewParamWorkoutExerciseRepo(pool)
+	paramWorkoutExerciseSvc := param_workout_exercise_uc.NewParamWorkoutExerciseService(paramWorkoutExerciseRepo)
+	paramWorkoutExerciseHandler := handler.NewParamWorkoutExerciseHandler(paramWorkoutExerciseSvc)
+
 	tokenManager, err := token.NewManager(cfg.JWT.Secret, cfg.JWT.AccessTTL, cfg.JWT.RefreshTTL)
 	if err != nil {
 		return nil, err
@@ -49,7 +54,7 @@ func New(cfg Config) (*App, error) {
 	}
 	authHandler := handler.NewAuthHandler(authSvc, googleOAuthConfig)
 
-	httpHandler := server.New(paramExerciseHandler, paramWorkoutHandler, authHandler, tokenManager)
+	httpHandler := server.New(paramExerciseHandler, paramWorkoutHandler, paramWorkoutExerciseHandler, authHandler, tokenManager)
 
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddress,
