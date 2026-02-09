@@ -9,6 +9,8 @@ type ParamExerciseRepository interface {
 	CreateParamxercise(ctx context.Context, param_exercise domain.ParamExercise) (int64, error)
 	GetParamExercises(ctx context.Context) ([]domain.ParamExercise, error)
 	GetParamExerciseByID(ctx context.Context, id int64) (domain.ParamExercise, error)
+	UpdateParamExercise(ctx context.Context, param_exercise domain.ParamExercise) (domain.ParamExercise, error)
+	DeleteParamExercise(ctx context.Context, id int64) error
 }
 
 type ParamExerciseService struct {
@@ -69,4 +71,32 @@ func (s *ParamExerciseService) GetParamExerciseByID(ctx context.Context, id int6
 		Name:    exercise.Name,
 		IconUrl: exercise.IconUrl,
 	}, nil
+}
+
+func (s *ParamExerciseService) UpdateParamExercise(ctx context.Context, dto UpdateParamExerciseDTO) (ParamExerciseDTO, error) {
+	if dto.ID <= 0 {
+		return ParamExerciseDTO{}, domain.ErrInvalidInput
+	}
+
+	updated, err := s.paramExerciseRepository.UpdateParamExercise(ctx, domain.ParamExercise{
+		ID:      dto.ID,
+		Name:    dto.Name,
+		IconUrl: dto.IconUrl,
+	})
+	if err != nil {
+		return ParamExerciseDTO{}, err
+	}
+
+	return ParamExerciseDTO{
+		ID:      updated.ID,
+		Name:    updated.Name,
+		IconUrl: updated.IconUrl,
+	}, nil
+}
+
+func (s *ParamExerciseService) DeleteParamExercise(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return domain.ErrInvalidInput
+	}
+	return s.paramExerciseRepository.DeleteParamExercise(ctx, id)
 }

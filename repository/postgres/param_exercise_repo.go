@@ -98,6 +98,58 @@ func (exerciseRepo *ParamExerciseRepo) GetParamExerciseByID(ctx context.Context,
 	return exercise, nil
 }
 
+func (exerciseRepo *ParamExerciseRepo) UpdateParamExercise(ctx context.Context, param_exercise domain.ParamExercise) (domain.ParamExercise, error) {
+	sqlUpdate := exerciseRepo.sb.Update(exerciseTableName).
+		Set("exercise_name", param_exercise.Name).
+		Set("icon_url", param_exercise.IconUrl).
+		Where(sq.Eq{"id": param_exercise.ID}).
+		Suffix("RETURNING id, exercise_name, icon_url")
+
+	sqlStr, args, err := sqlUpdate.ToSql()
+	if err != nil {
+		return domain.ParamExercise{}, err
+	}
+
+	var exercise domain.ParamExercise
+	err = exerciseRepo.db.QueryRowContext(ctx, sqlStr, args...).Scan(&exercise.ID, &exercise.Name, &exercise.IconUrl)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return domain.ParamExercise{}, domain.ErrNotFound
+		}
+		if isUniqueViolation(err) {
+			return domain.ParamExercise{}, domain.ErrExerciseAlreadyExists
+		}
+		return domain.ParamExercise{}, err
+	}
+
+	return exercise, nil
+}
+
+func (exerciseRepo *ParamExerciseRepo) DeleteParamExercise(ctx context.Context, id int64) error {
+	sqlDelete := exerciseRepo.sb.Delete(exerciseTableName).
+		Where(sq.Eq{"id": id})
+
+	sqlStr, args, err := sqlDelete.ToSql()
+	if err != nil {
+		return err
+	}
+
+	result, err := exerciseRepo.db.ExecContext(ctx, sqlStr, args...)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+
+	return nil
+}
+
 func isUniqueViolation(err error) bool {
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "duplicate key") ||

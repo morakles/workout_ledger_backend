@@ -8,6 +8,8 @@ import (
 
 type fakeParamExerciseRepo struct {
 	getByID func(ctx context.Context, id int64) (param_exercise.ParamExercise, error)
+	update  func(ctx context.Context, exercise param_exercise.ParamExercise) (param_exercise.ParamExercise, error)
+	delete  func(ctx context.Context, id int64) error
 }
 
 func (f fakeParamExerciseRepo) CreateParamxercise(ctx context.Context, exercise param_exercise.ParamExercise) (int64, error) {
@@ -23,6 +25,20 @@ func (f fakeParamExerciseRepo) GetParamExerciseByID(ctx context.Context, id int6
 		return param_exercise.ParamExercise{}, nil
 	}
 	return f.getByID(ctx, id)
+}
+
+func (f fakeParamExerciseRepo) UpdateParamExercise(ctx context.Context, exercise param_exercise.ParamExercise) (param_exercise.ParamExercise, error) {
+	if f.update == nil {
+		return exercise, nil
+	}
+	return f.update(ctx, exercise)
+}
+
+func (f fakeParamExerciseRepo) DeleteParamExercise(ctx context.Context, id int64) error {
+	if f.delete == nil {
+		return nil
+	}
+	return f.delete(ctx, id)
 }
 
 func TestGetParamExerciseByIDRejectsNonPositiveID(t *testing.T) {

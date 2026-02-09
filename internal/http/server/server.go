@@ -44,6 +44,8 @@ func New(paramExerciseHandler *handler.ParamExerciseHandler, paramWorkoutHandler
 			r.Post("/param_exercises", paramExerciseHandler.CreateParamExercise)
 			r.Get("/param_exercises", paramExerciseHandler.GetParamExercises)
 			r.Get("/param_exercises/{id}", paramExerciseHandler.GetParamExerciseByID)
+			r.Put("/param_exercises/{id}", paramExerciseHandler.UpdateParamExercise)
+			r.Delete("/param_exercises/{id}", paramExerciseHandler.DeleteParamExercise)
 			r.Post("/param_workouts", paramWorkoutHandler.CreateParamWorkout)
 			r.Get("/param_workouts", paramWorkoutHandler.GetParamWorkouts)
 			r.Get("/param_workouts/{id}", paramWorkoutHandler.GetParamWorkoutByID)

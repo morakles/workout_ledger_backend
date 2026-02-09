@@ -1,5 +1,13 @@
-basePath: /
 definitions:
+  handler.addExerciseToWorkoutRequest:
+    properties:
+      exercise_id:
+        example: 123
+        type: integer
+      exercise_order:
+        example: 1
+        type: integer
+    type: object
   handler.authUserResponse:
     properties:
       avatar_url:
@@ -21,6 +29,33 @@ definitions:
         format: date-time
         type: string
     type: object
+  handler.createParamExerciseRequest:
+    properties:
+      icon_url:
+        example: https://example.com/icon.png
+        type: string
+      name:
+        example: Push-up
+        type: string
+    type: object
+  handler.createParamExerciseResponse:
+    properties:
+      id:
+        example: 1
+        type: integer
+    type: object
+  handler.createParamWorkoutRequest:
+    properties:
+      name:
+        example: Push Day
+        type: string
+      number_of_sets:
+        example: 4
+        type: integer
+      rest_between_sets_seconds:
+        example: 90
+        type: integer
+    type: object
   handler.googleLoginResponse:
     properties:
       access_token:
@@ -38,9 +73,67 @@ definitions:
       user:
         $ref: '#/definitions/handler.authUserResponse'
     type: object
+  handler.loginRequest:
+    properties:
+      email:
+        description: 'in: body'
+        example: user@example.com
+        type: string
+      password:
+        example: strongpassword
+        type: string
+    type: object
+  handler.loginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: refresh_token_value
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+      user:
+        $ref: '#/definitions/handler.authUserResponse'
+    type: object
+  handler.paramExerciseResponse:
+    properties:
+      icon_url:
+        example: https://example.com/icon.png
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Push-up
+        type: string
+    type: object
+  handler.paramWorkoutResponse:
+    properties:
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Push Day
+        type: string
+      number_of_sets:
+        example: 4
+        type: integer
+      rest_between_sets_seconds:
+        example: 90
+        type: integer
+    type: object
   handler.refreshTokenRequest:
     properties:
       refresh_token:
+        description: |-
+          Refresh token issued during login
+
+          in: body
         example: refresh_token_value
         type: string
     type: object
@@ -61,7 +154,34 @@ definitions:
       user:
         $ref: '#/definitions/handler.authUserResponse'
     type: object
-  handler.createParamExerciseRequest:
+  handler.registerRequest:
+    properties:
+      email:
+        description: 'in: body'
+        example: user@example.com
+        type: string
+      password:
+        example: strongpassword
+        type: string
+    type: object
+  handler.registerResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: refresh_token_value
+        type: string
+      token_type:
+        example: Bearer
+        type: string
+      user:
+        $ref: '#/definitions/handler.authUserResponse'
+    type: object
+  handler.updateParamExerciseRequest:
     properties:
       icon_url:
         example: https://example.com/icon.png
@@ -70,23 +190,20 @@ definitions:
         example: Push-up
         type: string
     type: object
-  handler.createParamExerciseResponse:
+  handler.workoutExerciseResponse:
     properties:
-      id:
+      exercise_id:
+        example: 123
+        type: integer
+      exercise_name:
+        example: Bench Press
+        type: string
+      exercise_order:
         example: 1
         type: integer
-    type: object
-  handler.paramExerciseResponse:
-    properties:
-      icon_url:
-        example: https://example.com/icon.png
-        type: string
-      id:
+      workout_id:
         example: 1
         type: integer
-      name:
-        example: Push-up
-        type: string
     type: object
   presenter.APIError:
     properties:
@@ -101,40 +218,6 @@ info:
   title: Workout Ledger API
   version: "1.0"
 paths:
-  /v1/auth/refresh:
-    post:
-      consumes:
-      - application/json
-      description: Exchanges a refresh token for a new access token
-      parameters:
-      - description: payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handler.refreshTokenRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handler.refreshTokenResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/presenter.APIError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/presenter.APIError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/presenter.APIError'
-      summary: Refresh access token
-      tags:
-      - auth
   /v1/auth/google/callback:
     get:
       description: Exchanges the OAuth code for user info and logs in the user
@@ -184,6 +267,108 @@ paths:
           schema:
             $ref: '#/definitions/presenter.APIError'
       summary: Start Google login
+      tags:
+      - auth
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a local account and returns tokens
+      parameters:
+      - description: payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.loginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      summary: Login with email and password
+      tags:
+      - auth
+  /v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchanges a refresh token for a new access token
+      parameters:
+      - description: payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.refreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.refreshTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      summary: Refresh access token
+      tags:
+      - auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a local account and returns tokens
+      parameters:
+      - description: payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.registerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      summary: Register with email and password
       tags:
       - auth
   /v1/param_exercises:
@@ -243,6 +428,34 @@ paths:
       tags:
       - param_exercises
   /v1/param_exercises/{id}:
+    delete:
+      description: Deletes a param exercise
+      parameters:
+      - description: Param exercise ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
+      summary: Delete param exercise
+      tags:
+      - param_exercises
     get:
       description: Retrieves a param exercise by ID
       parameters:
@@ -275,9 +488,252 @@ paths:
       summary: Get param exercise by ID
       tags:
       - param_exercises
+    put:
+      consumes:
+      - application/json
+      description: Updates a param exercise
+      parameters:
+      - description: Param exercise ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.updateParamExerciseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.paramExerciseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
+      summary: Update param exercise
+      tags:
+      - param_exercises
+  /v1/param_workouts:
+    get:
+      description: Retrieves all param workouts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.paramWorkoutResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
+      summary: Get param workouts
+      tags:
+      - param_workouts
+    post:
+      consumes:
+      - application/json
+      description: Creates a new param workout
+      parameters:
+      - description: payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.createParamWorkoutRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.paramWorkoutResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
+      summary: Create param workout
+      tags:
+      - param_workouts
+  /v1/param_workouts/{id}:
+    get:
+      description: Retrieves a param workout by ID
+      parameters:
+      - description: Param workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.paramWorkoutResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
+      summary: Get param workout by ID
+      tags:
+      - param_workouts
+  /v1/param_workouts/{workoutId}/exercises:
+    get:
+      description: Retrieves exercises assigned to a workout plan
+      parameters:
+      - description: Workout ID
+        in: path
+        name: workoutId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.workoutExerciseResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
+      summary: List exercises in workout
+      tags:
+      - param_workouts
+    post:
+      consumes:
+      - application/json
+      description: Assigns an exercise to a workout plan
+      parameters:
+      - description: Workout ID
+        in: path
+        name: workoutId
+        required: true
+        type: integer
+      - description: payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.addExerciseToWorkoutRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.workoutExerciseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
+      summary: Add exercise to workout
+      tags:
+      - param_workouts
+  /v1/param_workouts/{workoutId}/exercises/{exerciseId}:
+    delete:
+      description: Removes an exercise assignment from a workout plan
+      parameters:
+      - description: Workout ID
+        in: path
+        name: workoutId
+        required: true
+        type: integer
+      - description: Exercise ID
+        in: path
+        name: exerciseId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/presenter.APIError'
+      security:
+      - BearerAuth: []
+      summary: Remove exercise from workout
+      tags:
+      - param_workouts
 securityDefinitions:
   BearerAuth:
-    description: Authorization header; you may paste the token directly or use "Bearer <token>".
+    description: Authorization header; you may paste the token directly or use "Bearer
+      <token>".
     in: header
     name: Authorization
     type: apiKey

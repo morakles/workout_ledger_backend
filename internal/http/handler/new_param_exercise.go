@@ -36,6 +36,12 @@ type createParamExerciseResponse struct {
 	ID int64 `json:"id" example:"1"`
 }
 
+// swagger:parameters updateParamExercise
+type updateParamExerciseRequest struct {
+	Name    string `json:"name" example:"Push-up"`
+	IconUrl string `json:"icon_url" example:"https://example.com/icon.png"`
+}
+
 // swagger:response getParamExercisesResponse
 type getParamExercisesResponse struct {
 	// in: body
@@ -43,6 +49,8 @@ type getParamExercisesResponse struct {
 }
 
 // swagger:parameters getParamExerciseByID
+// swagger:parameters updateParamExercise
+// swagger:parameters deleteParamExercise
 type getParamExerciseByIDRequest struct {
 	// ID param exercise ID
 	//
@@ -161,4 +169,80 @@ func (h *ParamExerciseHandler) GetParamExerciseByID(w http.ResponseWriter, r *ht
 		Name:    exercise.Name,
 		IconUrl: exercise.IconUrl,
 	})
+}
+
+// UpdateParamExercise godoc
+// @Summary      Update param exercise
+// @Description  Updates a param exercise
+// @Tags         param_exercises
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id       path      int                       true  "Param exercise ID"
+// @Param        request  body      updateParamExerciseRequest  true  "payload"
+// @Success      200      {object}  paramExerciseResponse
+// @Failure      400      {object}  presenter.APIError
+// @Failure      404      {object}  presenter.APIError
+// @Failure      500      {object}  presenter.APIError
+// @Router       /v1/param_exercises/{id} [put]
+func (h *ParamExerciseHandler) UpdateParamExercise(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		status, apiErr := presenter.StatusAndError(param_exercise.ErrInvalidInput)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
+	var body struct {
+		Name    string `json:"name"`
+		IconUrl string `json:"icon_url"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	updated, err := h.svc.UpdateParamExercise(r.Context(), param_exercise_uc.UpdateParamExerciseDTO{
+		ID:      id,
+		Name:    body.Name,
+		IconUrl: body.IconUrl,
+	})
+	if err != nil {
+		status, apiErr := presenter.StatusAndError(err)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, paramExerciseResponse{
+		ID:      updated.ID,
+		Name:    updated.Name,
+		IconUrl: updated.IconUrl,
+	})
+}
+
+// DeleteParamExercise godoc
+// @Summary      Delete param exercise
+// @Description  Deletes a param exercise
+// @Tags         param_exercises
+// @Security     BearerAuth
+// @Param        id   path  int  true  "Param exercise ID"
+// @Success      204
+// @Failure      400  {object}  presenter.APIError
+// @Failure      404  {object}  presenter.APIError
+// @Failure      500  {object}  presenter.APIError
+// @Router       /v1/param_exercises/{id} [delete]
+func (h *ParamExerciseHandler) DeleteParamExercise(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		status, apiErr := presenter.StatusAndError(param_exercise.ErrInvalidInput)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
+	if err := h.svc.DeleteParamExercise(r.Context(), id); err != nil {
+		status, apiErr := presenter.StatusAndError(err)
+		writeJSON(w, status, apiErr)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

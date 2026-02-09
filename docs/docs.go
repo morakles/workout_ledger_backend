@@ -15,58 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/auth/refresh": {
-            "post": {
-                "description": "Exchanges a refresh token for a new access token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Refresh access token",
-                "parameters": [
-                    {
-                        "description": "payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handler.refreshTokenRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handler.refreshTokenResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/presenter.APIError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/presenter.APIError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/presenter.APIError"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/auth/google/callback": {
             "get": {
                 "description": "Exchanges the OAuth code for user info and logs in the user",
@@ -144,19 +92,175 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/auth/login": {
+            "post": {
+                "description": "Authenticates a local account and returns tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login with email and password",
+                "parameters": [
+                    {
+                        "description": "payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.loginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.loginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/refresh": {
+            "post": {
+                "description": "Exchanges a refresh token for a new access token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "description": "payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.refreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.refreshTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/register": {
+            "post": {
+                "description": "Creates a local account and returns tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register with email and password",
+                "parameters": [
+                    {
+                        "description": "payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.registerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handler.registerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/param_exercises": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves all param exercises",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "param_exercises"
-                ],
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
                 ],
                 "summary": "Get param exercises",
                 "responses": {
@@ -178,6 +282,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new param exercise",
                 "consumes": [
                     "application/json"
@@ -187,11 +296,6 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "param_exercises"
-                ],
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
                 ],
                 "summary": "Create param exercise",
                 "parameters": [
@@ -235,17 +339,17 @@ const docTemplate = `{
         },
         "/v1/param_exercises/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves a param exercise by ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "param_exercises"
-                ],
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
                 ],
                 "summary": "Get param exercise by ID",
                 "parameters": [
@@ -283,10 +387,446 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates a param exercise",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "param_exercises"
+                ],
+                "summary": "Update param exercise",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Param exercise ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.updateParamExerciseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.paramExerciseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a param exercise",
+                "tags": [
+                    "param_exercises"
+                ],
+                "summary": "Delete param exercise",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Param exercise ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/param_workouts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all param workouts",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "param_workouts"
+                ],
+                "summary": "Get param workouts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.paramWorkoutResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new param workout",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "param_workouts"
+                ],
+                "summary": "Create param workout",
+                "parameters": [
+                    {
+                        "description": "payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.createParamWorkoutRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handler.paramWorkoutResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/param_workouts/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a param workout by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "param_workouts"
+                ],
+                "summary": "Get param workout by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Param workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.paramWorkoutResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/param_workouts/{workoutId}/exercises": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves exercises assigned to a workout plan",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "param_workouts"
+                ],
+                "summary": "List exercises in workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "workoutId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.workoutExerciseResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Assigns an exercise to a workout plan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "param_workouts"
+                ],
+                "summary": "Add exercise to workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "workoutId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.addExerciseToWorkoutRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handler.workoutExerciseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/param_workouts/{workoutId}/exercises/{exerciseId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes an exercise assignment from a workout plan",
+                "tags": [
+                    "param_workouts"
+                ],
+                "summary": "Remove exercise from workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "workoutId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Exercise ID",
+                        "name": "exerciseId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/presenter.APIError"
+                        }
+                    }
+                }
             }
         }
     },
     "definitions": {
+        "handler.addExerciseToWorkoutRequest": {
+            "type": "object",
+            "properties": {
+                "exercise_id": {
+                    "type": "integer",
+                    "example": 123
+                },
+                "exercise_order": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
         "handler.authUserResponse": {
             "type": "object",
             "properties": {
@@ -316,6 +856,45 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.createParamExerciseRequest": {
+            "type": "object",
+            "properties": {
+                "icon_url": {
+                    "type": "string",
+                    "example": "https://example.com/icon.png"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Push-up"
+                }
+            }
+        },
+        "handler.createParamExerciseResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "handler.createParamWorkoutRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "Push Day"
+                },
+                "number_of_sets": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "rest_between_sets_seconds": {
+                    "type": "integer",
+                    "example": 90
+                }
+            }
+        },
         "handler.googleLoginResponse": {
             "type": "object",
             "properties": {
@@ -340,10 +919,87 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.loginRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "in: body",
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "strongpassword"
+                }
+            }
+        },
+        "handler.loginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "expires_in": {
+                    "type": "integer",
+                    "example": 900
+                },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "refresh_token_value"
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
+                },
+                "user": {
+                    "$ref": "#/definitions/handler.authUserResponse"
+                }
+            }
+        },
+        "handler.paramExerciseResponse": {
+            "type": "object",
+            "properties": {
+                "icon_url": {
+                    "type": "string",
+                    "example": "https://example.com/icon.png"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Push-up"
+                }
+            }
+        },
+        "handler.paramWorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Push Day"
+                },
+                "number_of_sets": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "rest_between_sets_seconds": {
+                    "type": "integer",
+                    "example": 90
+                }
+            }
+        },
         "handler.refreshTokenRequest": {
             "type": "object",
             "properties": {
                 "refresh_token": {
+                    "description": "Refresh token issued during login\n\nin: body",
                     "type": "string",
                     "example": "refresh_token_value"
                 }
@@ -373,7 +1029,45 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.createParamExerciseRequest": {
+        "handler.registerRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "in: body",
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "strongpassword"
+                }
+            }
+        },
+        "handler.registerResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "expires_in": {
+                    "type": "integer",
+                    "example": 900
+                },
+                "refresh_token": {
+                    "type": "string",
+                    "example": "refresh_token_value"
+                },
+                "token_type": {
+                    "type": "string",
+                    "example": "Bearer"
+                },
+                "user": {
+                    "$ref": "#/definitions/handler.authUserResponse"
+                }
+            }
+        },
+        "handler.updateParamExerciseRequest": {
             "type": "object",
             "properties": {
                 "icon_url": {
@@ -386,29 +1080,24 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.createParamExerciseResponse": {
+        "handler.workoutExerciseResponse": {
             "type": "object",
             "properties": {
-                "id": {
+                "exercise_id": {
                     "type": "integer",
-                    "example": 1
-                }
-            }
-        },
-        "handler.paramExerciseResponse": {
-            "type": "object",
-            "properties": {
-                "icon_url": {
-                    "type": "string",
-                    "example": "https://example.com/icon.png"
+                    "example": 123
                 },
-                "id": {
+                "exercise_name": {
+                    "type": "string",
+                    "example": "Bench Press"
+                },
+                "exercise_order": {
                     "type": "integer",
                     "example": 1
                 },
-                "name": {
-                    "type": "string",
-                    "example": "Push-up"
+                "workout_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -426,7 +1115,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Authorization header; you may paste the token directly or use \"Bearer <token>\".",
+            "description": "Authorization header; you may paste the token directly or use \"Bearer \u003ctoken\u003e\".",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -438,7 +1127,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "/",
+	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "Workout Ledger API",
 	Description:      "Simple REST API for Workout Ledger.",
