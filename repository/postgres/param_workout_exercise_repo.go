@@ -42,9 +42,9 @@ func (repo *ParamWorkoutExerciseRepo) AddExerciseToWorkout(ctx context.Context, 
 	}
 
 	sqlInsert := repo.sb.Insert(workoutExercisesTableName).
-		Columns("workout_id", "exercise_id", "exercise_order").
+		Columns("param_workout_id", "param_exercise_id", "order_index").
 		Values(workoutID, exerciseID, order).
-		Suffix("RETURNING workout_id, exercise_id, exercise_order, (SELECT exercise_name FROM param_exercise WHERE id = exercise_id) AS exercise_name")
+		Suffix("RETURNING param_workout_id, param_exercise_id, order_index, (SELECT exercise_name FROM param_exercise WHERE id = param_exercise_id) AS exercise_name")
 
 	sqlStr, args, err := sqlInsert.ToSql()
 	if err != nil {
@@ -78,15 +78,15 @@ func (repo *ParamWorkoutExerciseRepo) ListWorkoutExercises(ctx context.Context, 
 	}
 
 	sqlSelect := repo.sb.Select(
-		"eiw.workout_id",
-		"eiw.exercise_id",
-		"eiw.exercise_order",
+		"eiw.param_workout_id",
+		"eiw.param_exercise_id",
+		"eiw.order_index",
 		"pe.exercise_name AS exercise_name",
 	).
 		From(workoutExercisesTableName + " eiw").
-		Join(paramExerciseTableName + " pe ON pe.id = eiw.exercise_id").
-		Where(sq.Eq{"eiw.workout_id": workoutID}).
-		OrderBy("eiw.exercise_order ASC")
+		Join(paramExerciseTableName + " pe ON pe.id = eiw.param_exercise_id").
+		Where(sq.Eq{"eiw.param_workout_id": workoutID}).
+		OrderBy("eiw.order_index ASC")
 
 	sqlStr, args, err := sqlSelect.ToSql()
 	if err != nil {
@@ -129,7 +129,7 @@ func (repo *ParamWorkoutExerciseRepo) RemoveExerciseFromWorkout(ctx context.Cont
 	}
 
 	sqlDelete := repo.sb.Delete(workoutExercisesTableName).
-		Where(sq.Eq{"workout_id": workoutID, "exercise_id": exerciseID})
+		Where(sq.Eq{"param_workout_id": workoutID, "param_exercise_id": exerciseID})
 
 	sqlStr, args, err := sqlDelete.ToSql()
 	if err != nil {

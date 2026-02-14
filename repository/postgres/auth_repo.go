@@ -93,9 +93,10 @@ func findUserByIdentity(ctx context.Context, tx *sql.Tx, providerID int64, provi
 
 	err := tx.QueryRowContext(
 		ctx,
-		`SELECT u.id, u.email, u.display_name, u.avatar_url, u.email_verified_at, u.last_login_at, u.auth_provider, u.password_hash
+		`SELECT u.id, u.email, u.display_name, u.avatar_url, u.email_verified_at, u.last_login_at, u.auth_provider, up.password_hash
 		 FROM auth_identities ai
 		 JOIN param_users u ON u.id = ai.user_id
+		 LEFT JOIN user_passwords up ON up.user_id = u.id
 		 WHERE ai.auth_provider_id = $1 AND ai.provider_user_id = $2`,
 		providerID,
 		providerUserID,
@@ -129,7 +130,6 @@ func findUserByIdentity(ctx context.Context, tx *sql.Tx, providerID int64, provi
 	}
 	return user, true, nil
 }
-
 func findUserByEmail(ctx context.Context, tx *sql.Tx, email string) (authDomain.User, bool, error) {
 	var user authDomain.User
 	var displayName sql.NullString
@@ -141,8 +141,10 @@ func findUserByEmail(ctx context.Context, tx *sql.Tx, email string) (authDomain.
 
 	err := tx.QueryRowContext(
 		ctx,
-		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at, auth_provider, password_hash
-		 FROM param_users WHERE email = $1`,
+		`SELECT u.id, u.email, u.display_name, u.avatar_url, u.email_verified_at, u.last_login_at, u.auth_provider, up.password_hash
+		 FROM param_users u
+		 LEFT JOIN user_passwords up ON up.user_id = u.id
+		 WHERE u.email = $1`,
 		email,
 	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt, &authProvider, &passwordHash)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -192,21 +194,19 @@ func createUser(ctx context.Context, tx *sql.Tx, profile authUC.GoogleProfile) (
 	}
 	authProvider := authDomain.AuthProviderGoogle
 	var authProviderResult sql.NullString
-	var passwordHash sql.NullString
 
 	err := tx.QueryRowContext(
 		ctx,
-		`INSERT INTO param_users (email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider, password_hash)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)
-		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider, password_hash`,
+		`INSERT INTO param_users (email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider)
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider`,
 		profile.Email,
 		emailVerifiedAt,
 		displayName,
 		avatarURL,
 		now,
 		authProvider,
-		sql.NullString{},
-	).Scan(&user.ID, &user.Email, &emailVerifiedAt, &displayName, &avatarURL, &user.LastLoginAt, &authProviderResult, &passwordHash)
+	).Scan(&user.ID, &user.Email, &emailVerifiedAt, &displayName, &avatarURL, &user.LastLoginAt, &authProviderResult)
 	if err != nil {
 		return authDomain.User{}, err
 	}
@@ -223,9 +223,6 @@ func createUser(ctx context.Context, tx *sql.Tx, profile authUC.GoogleProfile) (
 		user.AuthProvider = authProviderResult.String
 	} else {
 		user.AuthProvider = authProvider
-	}
-	if passwordHash.Valid {
-		user.PasswordHash = &passwordHash.String
 	}
 	return user, nil
 }
@@ -263,7 +260,6 @@ func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile
 	var avatarURLResult sql.NullString
 	var lastLoginAt sql.NullTime
 	var authProviderResult sql.NullString
-	var passwordHash sql.NullString
 	err := tx.QueryRowContext(
 		ctx,
 		`UPDATE param_users
@@ -275,7 +271,7 @@ func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile
 		     updated_at = $6,
 		     last_login_at = $6
 		 WHERE id = $7
-		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider, password_hash`,
+		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider`,
 		profile.Email,
 		emailVerifiedAt,
 		displayName,
@@ -283,7 +279,7 @@ func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile
 		authProvider,
 		now,
 		userID,
-	).Scan(&user.ID, &user.Email, &emailVerifiedAtResult, &displayNameResult, &avatarURLResult, &lastLoginAt, &authProviderResult, &passwordHash)
+	).Scan(&user.ID, &user.Email, &emailVerifiedAtResult, &displayNameResult, &avatarURLResult, &lastLoginAt, &authProviderResult)
 	if err != nil {
 		return authDomain.User{}, err
 	}
@@ -301,9 +297,6 @@ func updateUserFromGoogle(ctx context.Context, tx *sql.Tx, userID int64, profile
 	}
 	if authProviderResult.Valid {
 		user.AuthProvider = authProviderResult.String
-	}
-	if passwordHash.Valid {
-		user.PasswordHash = &passwordHash.String
 	}
 	return user, nil
 }
@@ -392,9 +385,10 @@ func (r *AuthRepo) GetUserByID(ctx context.Context, userID int64) (authDomain.Us
 	var passwordHash sql.NullString
 	err := r.db.QueryRowContext(
 		ctx,
-		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at, auth_provider, password_hash
-		 FROM param_users
-		 WHERE id = $1`,
+		`SELECT u.id, u.email, u.display_name, u.avatar_url, u.email_verified_at, u.last_login_at, u.auth_provider, up.password_hash
+		 FROM param_users u
+		 LEFT JOIN user_passwords up ON up.user_id = u.id
+		 WHERE u.id = $1`,
 		userID,
 	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt, &authProvider, &passwordHash)
 	if err != nil {
@@ -433,13 +427,25 @@ func (r *AuthRepo) CreateLocalUser(ctx context.Context, email, passwordHash stri
 	var storedPasswordHash sql.NullString
 	err := r.db.QueryRowContext(
 		ctx,
-		`INSERT INTO param_users (email, password_hash, auth_provider, last_login_at)
-		 VALUES ($1, $2, $3, $4)
-		 RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider, password_hash`,
+		`WITH created_user AS (
+			INSERT INTO param_users (email, auth_provider, last_login_at)
+			VALUES ($1, $2, $3)
+			RETURNING id, email, email_verified_at, display_name, avatar_url, last_login_at, auth_provider
+		)
+		INSERT INTO user_passwords (user_id, password_hash, hash_version, password_updated_at)
+		SELECT id, $4, 1, $3 FROM created_user
+		RETURNING user_id,
+		          (SELECT email FROM created_user),
+		          (SELECT email_verified_at FROM created_user),
+		          (SELECT display_name FROM created_user),
+		          (SELECT avatar_url FROM created_user),
+		          (SELECT last_login_at FROM created_user),
+		          (SELECT auth_provider FROM created_user),
+		          password_hash`,
 		email,
-		passwordHash,
 		authDomain.AuthProviderLocal,
 		now,
+		passwordHash,
 	).Scan(&user.ID, &user.Email, &emailVerifiedAt, &displayName, &avatarURL, &lastLoginAt, &authProvider, &storedPasswordHash)
 	if err != nil {
 		return authDomain.User{}, err
@@ -464,7 +470,6 @@ func (r *AuthRepo) CreateLocalUser(ctx context.Context, email, passwordHash stri
 	}
 	return user, nil
 }
-
 func (r *AuthRepo) FindUserByEmail(ctx context.Context, email string) (authDomain.User, bool, error) {
 	var user authDomain.User
 	var displayName sql.NullString
@@ -476,8 +481,10 @@ func (r *AuthRepo) FindUserByEmail(ctx context.Context, email string) (authDomai
 
 	err := r.db.QueryRowContext(
 		ctx,
-		`SELECT id, email, display_name, avatar_url, email_verified_at, last_login_at, auth_provider, password_hash
-		 FROM param_users WHERE email = $1`,
+		`SELECT u.id, u.email, u.display_name, u.avatar_url, u.email_verified_at, u.last_login_at, u.auth_provider, up.password_hash
+		 FROM param_users u
+		 LEFT JOIN user_passwords up ON up.user_id = u.id
+		 WHERE u.email = $1`,
 		email,
 	).Scan(&user.ID, &user.Email, &displayName, &avatarURL, &emailVerifiedAt, &lastLoginAt, &authProvider, &passwordHash)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -508,7 +515,6 @@ func (r *AuthRepo) FindUserByEmail(ctx context.Context, email string) (authDomai
 	}
 	return user, true, nil
 }
-
 func (r *AuthRepo) UpdateLastLogin(ctx context.Context, userID int64, now time.Time) error {
 	_, err := r.db.ExecContext(
 		ctx,
