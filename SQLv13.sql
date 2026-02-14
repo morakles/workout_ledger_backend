@@ -1,5 +1,0 @@
-ALTER TABLE "param_users"
-ADD COLUMN IF NOT EXISTS "password_hash" TEXT;
-
-ALTER TABLE "param_users"
-ADD COLUMN IF NOT EXISTS "auth_provider" TEXT NOT NULL DEFAULT 'GOOGLE';
