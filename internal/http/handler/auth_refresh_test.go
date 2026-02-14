@@ -27,6 +27,18 @@ func (f *fakeAuthRepo) CreateRefreshToken(ctx context.Context, token authDomain.
 	return nil
 }
 
+func (f *fakeAuthRepo) CreateLocalUser(ctx context.Context, email, passwordHash string, now time.Time) (authDomain.User, error) {
+	return authDomain.User{}, nil
+}
+
+func (f *fakeAuthRepo) FindUserByEmail(ctx context.Context, email string) (authDomain.User, bool, error) {
+	return authDomain.User{}, false, nil
+}
+
+func (f *fakeAuthRepo) UpdateLastLogin(ctx context.Context, userID int64, now time.Time) error {
+	return nil
+}
+
 func (f *fakeAuthRepo) FindRefreshTokenByHash(ctx context.Context, tokenHash string) (authDomain.RefreshToken, bool, error) {
 	if tokenHash != f.refreshToken.TokenHash {
 		return authDomain.RefreshToken{}, false, nil

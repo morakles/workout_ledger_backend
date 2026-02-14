@@ -46,6 +46,9 @@ type removeExerciseFromWorkoutParams struct {
 type addExerciseToWorkoutRequest struct {
 	ExerciseID    int64 `json:"exercise_id" example:"123"`
 	ExerciseOrder int   `json:"exercise_order" example:"1"`
+	DefaultSets   *int  `json:"default_sets,omitempty" example:"4"`
+	DefaultRest   *int  `json:"default_rest,omitempty" example:"90"`
+	DefaultReps   *int  `json:"default_reps,omitempty" example:"10"`
 }
 
 type workoutExerciseResponse struct {
@@ -53,6 +56,9 @@ type workoutExerciseResponse struct {
 	ExerciseID    int64  `json:"exercise_id" example:"123"`
 	ExerciseOrder int    `json:"exercise_order" example:"1"`
 	ExerciseName  string `json:"exercise_name,omitempty" example:"Bench Press"`
+	DefaultSets   *int   `json:"default_sets,omitempty" example:"4"`
+	DefaultRest   *int   `json:"default_rest,omitempty" example:"90"`
+	DefaultReps   *int   `json:"default_reps,omitempty" example:"10"`
 }
 
 // AddExerciseToWorkout godoc
@@ -81,13 +87,19 @@ func (h *ParamWorkoutExerciseHandler) AddExerciseToWorkout(w http.ResponseWriter
 	var body struct {
 		ExerciseID    int64 `json:"exercise_id"`
 		ExerciseOrder int   `json:"exercise_order"`
+		DefaultSets   *int  `json:"default_sets"`
+		DefaultRest   *int  `json:"default_rest"`
+		DefaultReps   *int  `json:"default_reps"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 
 	res, err := h.svc.AddExerciseToWorkout(r.Context(), param_workout_exercise_uc.AddWorkoutExerciseDTO{
-		WorkoutID:     workoutID,
-		ExerciseID:    body.ExerciseID,
-		ExerciseOrder: body.ExerciseOrder,
+		WorkoutID:          workoutID,
+		ExerciseID:         body.ExerciseID,
+		ExerciseOrder:      body.ExerciseOrder,
+		DefaultSets:        body.DefaultSets,
+		DefaultRestSeconds: body.DefaultRest,
+		DefaultReps:        body.DefaultReps,
 	})
 	if err != nil {
 		status, apiErr := presenter.StatusAndError(err)
@@ -100,6 +112,9 @@ func (h *ParamWorkoutExerciseHandler) AddExerciseToWorkout(w http.ResponseWriter
 		ExerciseID:    res.ExerciseID,
 		ExerciseOrder: res.ExerciseOrder,
 		ExerciseName:  res.ExerciseName,
+		DefaultSets:   res.DefaultSets,
+		DefaultRest:   res.DefaultRestSeconds,
+		DefaultReps:   res.DefaultReps,
 	})
 }
 
@@ -137,6 +152,9 @@ func (h *ParamWorkoutExerciseHandler) ListWorkoutExercises(w http.ResponseWriter
 			ExerciseID:    assignment.ExerciseID,
 			ExerciseOrder: assignment.ExerciseOrder,
 			ExerciseName:  assignment.ExerciseName,
+			DefaultSets:   assignment.DefaultSets,
+			DefaultRest:   assignment.DefaultRestSeconds,
+			DefaultReps:   assignment.DefaultReps,
 		})
 	}
 

@@ -24,7 +24,6 @@ func NewParamWorkoutHandler(svc *param_workout_uc.ParamWorkoutService) *ParamWor
 // swagger:parameters createParamWorkout
 type createParamWorkoutRequest struct {
 	Name                   string `json:"name" example:"Push Day"`
-	NumberOfSets           int    `json:"number_of_sets" example:"4"`
 	RestBetweenSetsSeconds int    `json:"rest_between_sets_seconds" example:"90"`
 }
 
@@ -54,7 +53,6 @@ type getParamWorkoutByIDResponse struct {
 type paramWorkoutResponse struct {
 	ID                     int64  `json:"id" example:"1"`
 	Name                   string `json:"name" example:"Push Day"`
-	NumberOfSets           int    `json:"number_of_sets" example:"4"`
 	RestBetweenSetsSeconds int    `json:"rest_between_sets_seconds" example:"90"`
 }
 
@@ -74,7 +72,6 @@ type paramWorkoutResponse struct {
 func (h *ParamWorkoutHandler) CreateParamWorkout(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Name                   string `json:"name"`
-		NumberOfSets           int    `json:"number_of_sets"`
 		RestBetweenSetsSeconds int    `json:"rest_between_sets_seconds"`
 	}
 
@@ -89,7 +86,6 @@ func (h *ParamWorkoutHandler) CreateParamWorkout(w http.ResponseWriter, r *http.
 	res, err := h.svc.CreateParamWorkout(r.Context(), param_workout_uc.CreateParamWorkoutDTO{
 		UserID:                 userID,
 		Name:                   body.Name,
-		NumberOfSets:           body.NumberOfSets,
 		RestBetweenSetsSeconds: body.RestBetweenSetsSeconds,
 	})
 	if err != nil {
@@ -101,7 +97,6 @@ func (h *ParamWorkoutHandler) CreateParamWorkout(w http.ResponseWriter, r *http.
 	writeJSON(w, http.StatusCreated, paramWorkoutResponse{
 		ID:                     res.ID,
 		Name:                   res.Name,
-		NumberOfSets:           res.NumberOfSets,
 		RestBetweenSetsSeconds: res.RestBetweenSetsSeconds,
 	})
 }
@@ -134,7 +129,6 @@ func (h *ParamWorkoutHandler) GetParamWorkouts(w http.ResponseWriter, r *http.Re
 		response = append(response, paramWorkoutResponse{
 			ID:                     workout.ID,
 			Name:                   workout.Name,
-			NumberOfSets:           workout.NumberOfSets,
 			RestBetweenSetsSeconds: workout.RestBetweenSetsSeconds,
 		})
 	}
@@ -180,7 +174,6 @@ func (h *ParamWorkoutHandler) GetParamWorkoutByID(w http.ResponseWriter, r *http
 	writeJSON(w, http.StatusOK, paramWorkoutResponse{
 		ID:                     workout.ID,
 		Name:                   workout.Name,
-		NumberOfSets:           workout.NumberOfSets,
 		RestBetweenSetsSeconds: workout.RestBetweenSetsSeconds,
 	})
 }

@@ -24,7 +24,7 @@ func NewParamWorkoutExerciseRepo(db *sql.DB) *ParamWorkoutExerciseRepo {
 	return &ParamWorkoutExerciseRepo{db: db, sb: sb}
 }
 
-func (repo *ParamWorkoutExerciseRepo) AddExerciseToWorkout(ctx context.Context, workoutID, exerciseID int64, order int) (param_workout_exercise.WorkoutExercise, error) {
+func (repo *ParamWorkoutExerciseRepo) AddExerciseToWorkout(ctx context.Context, workoutID, exerciseID int64, order int, defaultSets, defaultRestSeconds, defaultReps *int) (param_workout_exercise.WorkoutExercise, error) {
 	workoutExists, err := repo.workoutExists(ctx, workoutID)
 	if err != nil {
 		return param_workout_exercise.WorkoutExercise{}, err
@@ -41,10 +41,13 @@ func (repo *ParamWorkoutExerciseRepo) AddExerciseToWorkout(ctx context.Context, 
 		return param_workout_exercise.WorkoutExercise{}, param_workout_exercise.ErrExerciseNotFound
 	}
 
+	defaultSetsValue := toNullInt16(defaultSets)
+	defaultRepsValue := toNullInt16(defaultReps)
+
 	sqlInsert := repo.sb.Insert(workoutExercisesTableName).
-		Columns("workout_id", "exercise_id", "exercise_order").
-		Values(workoutID, exerciseID, order).
-		Suffix("RETURNING workout_id, exercise_id, exercise_order, (SELECT exercise_name FROM param_exercise WHERE id = exercise_id) AS exercise_name")
+		Columns("param_workout_id", "param_exercise_id", "default_sets", "default_rest", "default_reps", "order_index").
+		Values(workoutID, exerciseID, defaultSetsValue, toIntervalExpr(defaultRestSeconds), defaultRepsValue, order).
+		Suffix("RETURNING param_workout_id, param_exercise_id, order_index, (SELECT exercise_name FROM param_exercise WHERE id = param_exercise_id) AS exercise_name, default_sets, EXTRACT(EPOCH FROM default_rest)::int AS default_rest_seconds, default_reps")
 
 	sqlStr, args, err := sqlInsert.ToSql()
 	if err != nil {
@@ -52,17 +55,36 @@ func (repo *ParamWorkoutExerciseRepo) AddExerciseToWorkout(ctx context.Context, 
 	}
 
 	var assignment param_workout_exercise.WorkoutExercise
+	var defaultSetsResult sql.NullInt16
+	var defaultRestResult sql.NullInt64
+	var defaultRepsResult sql.NullInt16
 	err = repo.db.QueryRowContext(ctx, sqlStr, args...).Scan(
 		&assignment.WorkoutID,
 		&assignment.ExerciseID,
 		&assignment.ExerciseOrder,
 		&assignment.ExerciseName,
+		&defaultSetsResult,
+		&defaultRestResult,
+		&defaultRepsResult,
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return param_workout_exercise.WorkoutExercise{}, param_workout_exercise.ErrConflict
 		}
 		return param_workout_exercise.WorkoutExercise{}, err
+	}
+
+	if defaultSetsResult.Valid {
+		v := int(defaultSetsResult.Int16)
+		assignment.DefaultSets = &v
+	}
+	if defaultRestResult.Valid {
+		v := int(defaultRestResult.Int64)
+		assignment.DefaultRestSeconds = &v
+	}
+	if defaultRepsResult.Valid {
+		v := int(defaultRepsResult.Int16)
+		assignment.DefaultReps = &v
 	}
 
 	return assignment, nil
@@ -78,15 +100,18 @@ func (repo *ParamWorkoutExerciseRepo) ListWorkoutExercises(ctx context.Context, 
 	}
 
 	sqlSelect := repo.sb.Select(
-		"eiw.workout_id",
-		"eiw.exercise_id",
-		"eiw.exercise_order",
+		"eiw.param_workout_id",
+		"eiw.param_exercise_id",
+		"eiw.order_index",
 		"pe.exercise_name AS exercise_name",
+		"eiw.default_sets",
+		"EXTRACT(EPOCH FROM eiw.default_rest)::int AS default_rest_seconds",
+		"eiw.default_reps",
 	).
 		From(workoutExercisesTableName + " eiw").
-		Join(paramExerciseTableName + " pe ON pe.id = eiw.exercise_id").
-		Where(sq.Eq{"eiw.workout_id": workoutID}).
-		OrderBy("eiw.exercise_order ASC")
+		Join(paramExerciseTableName + " pe ON pe.id = eiw.param_exercise_id").
+		Where(sq.Eq{"eiw.param_workout_id": workoutID}).
+		OrderBy("eiw.order_index ASC")
 
 	sqlStr, args, err := sqlSelect.ToSql()
 	if err != nil {
@@ -102,13 +127,31 @@ func (repo *ParamWorkoutExerciseRepo) ListWorkoutExercises(ctx context.Context, 
 	assignments := make([]param_workout_exercise.WorkoutExercise, 0)
 	for rows.Next() {
 		var assignment param_workout_exercise.WorkoutExercise
+		var defaultSetsResult sql.NullInt16
+		var defaultRestResult sql.NullInt64
+		var defaultRepsResult sql.NullInt16
 		if err := rows.Scan(
 			&assignment.WorkoutID,
 			&assignment.ExerciseID,
 			&assignment.ExerciseOrder,
 			&assignment.ExerciseName,
+			&defaultSetsResult,
+			&defaultRestResult,
+			&defaultRepsResult,
 		); err != nil {
 			return nil, err
+		}
+		if defaultSetsResult.Valid {
+			v := int(defaultSetsResult.Int16)
+			assignment.DefaultSets = &v
+		}
+		if defaultRestResult.Valid {
+			v := int(defaultRestResult.Int64)
+			assignment.DefaultRestSeconds = &v
+		}
+		if defaultRepsResult.Valid {
+			v := int(defaultRepsResult.Int16)
+			assignment.DefaultReps = &v
 		}
 		assignments = append(assignments, assignment)
 	}
@@ -129,7 +172,7 @@ func (repo *ParamWorkoutExerciseRepo) RemoveExerciseFromWorkout(ctx context.Cont
 	}
 
 	sqlDelete := repo.sb.Delete(workoutExercisesTableName).
-		Where(sq.Eq{"workout_id": workoutID, "exercise_id": exerciseID})
+		Where(sq.Eq{"param_workout_id": workoutID, "param_exercise_id": exerciseID})
 
 	sqlStr, args, err := sqlDelete.ToSql()
 	if err != nil {
@@ -194,4 +237,18 @@ func (repo *ParamWorkoutExerciseRepo) exerciseExists(ctx context.Context, exerci
 		return false, err
 	}
 	return true, nil
+}
+
+func toNullInt16(value *int) sql.NullInt16 {
+	if value == nil {
+		return sql.NullInt16{}
+	}
+	return sql.NullInt16{Int16: int16(*value), Valid: true}
+}
+
+func toIntervalExpr(value *int) interface{} {
+	if value == nil {
+		return nil
+	}
+	return sq.Expr("make_interval(secs => ?)", *value)
 }

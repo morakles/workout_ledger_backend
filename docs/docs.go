@@ -817,6 +817,18 @@ const docTemplate = `{
         "handler.addExerciseToWorkoutRequest": {
             "type": "object",
             "properties": {
+                "default_reps": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "default_rest": {
+                    "type": "integer",
+                    "example": 90
+                },
+                "default_sets": {
+                    "type": "integer",
+                    "example": 4
+                },
                 "exercise_id": {
                     "type": "integer",
                     "example": 123
@@ -884,10 +896,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Push Day"
-                },
-                "number_of_sets": {
-                    "type": "integer",
-                    "example": 4
                 },
                 "rest_between_sets_seconds": {
                     "type": "integer",
@@ -985,10 +993,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Push Day"
                 },
-                "number_of_sets": {
-                    "type": "integer",
-                    "example": 4
-                },
                 "rest_between_sets_seconds": {
                     "type": "integer",
                     "example": 90
@@ -1083,6 +1087,18 @@ const docTemplate = `{
         "handler.workoutExerciseResponse": {
             "type": "object",
             "properties": {
+                "default_reps": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "default_rest": {
+                    "type": "integer",
+                    "example": 90
+                },
+                "default_sets": {
+                    "type": "integer",
+                    "example": 4
+                },
                 "exercise_id": {
                     "type": "integer",
                     "example": 123

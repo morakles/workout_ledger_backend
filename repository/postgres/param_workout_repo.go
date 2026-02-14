@@ -25,9 +25,9 @@ func NewParamWorkoutRepo(db *sql.DB) *ParamWorkoutRepo {
 
 func (workoutRepo *ParamWorkoutRepo) CreateParamWorkout(ctx context.Context, workout param_workout.ParamWorkout) (param_workout.ParamWorkout, error) {
 	sqlInsert := workoutRepo.sb.Insert(workoutTableName).
-		Columns("user_id", "workout_name", "number_of_sets", "rest_between_sets").
-		Values(workout.UserID, workout.Name, workout.NumberOfSets, sq.Expr("make_interval(secs => ?)", workout.RestBetweenSetsSeconds)).
-		Suffix("RETURNING id, user_id, workout_name, number_of_sets, EXTRACT(EPOCH FROM rest_between_sets)::int AS rest_between_sets_seconds")
+		Columns("user_id", "workout_name", "rest_between_sets").
+		Values(workout.UserID, workout.Name, sq.Expr("make_interval(secs => ?)", workout.RestBetweenSetsSeconds)).
+		Suffix("RETURNING id, user_id, workout_name, EXTRACT(EPOCH FROM rest_between_sets)::int AS rest_between_sets_seconds")
 
 	sqlStr, args, err := sqlInsert.ToSql()
 	if err != nil {
@@ -39,7 +39,6 @@ func (workoutRepo *ParamWorkoutRepo) CreateParamWorkout(ctx context.Context, wor
 		&created.ID,
 		&created.UserID,
 		&created.Name,
-		&created.NumberOfSets,
 		&created.RestBetweenSetsSeconds,
 	)
 	if err != nil {
@@ -57,7 +56,6 @@ func (workoutRepo *ParamWorkoutRepo) GetParamWorkoutByID(ctx context.Context, us
 		"id",
 		"user_id",
 		"workout_name",
-		"number_of_sets",
 		"EXTRACT(EPOCH FROM rest_between_sets)::int AS rest_between_sets_seconds",
 	).
 		From(workoutTableName).
@@ -73,7 +71,6 @@ func (workoutRepo *ParamWorkoutRepo) GetParamWorkoutByID(ctx context.Context, us
 		&workout.ID,
 		&workout.UserID,
 		&workout.Name,
-		&workout.NumberOfSets,
 		&workout.RestBetweenSetsSeconds,
 	)
 	if err != nil {
@@ -91,7 +88,6 @@ func (workoutRepo *ParamWorkoutRepo) GetParamWorkouts(ctx context.Context, userI
 		"id",
 		"user_id",
 		"workout_name",
-		"number_of_sets",
 		"EXTRACT(EPOCH FROM rest_between_sets)::int AS rest_between_sets_seconds",
 	).
 		From(workoutTableName).
@@ -116,7 +112,6 @@ func (workoutRepo *ParamWorkoutRepo) GetParamWorkouts(ctx context.Context, userI
 			&workout.ID,
 			&workout.UserID,
 			&workout.Name,
-			&workout.NumberOfSets,
 			&workout.RestBetweenSetsSeconds,
 		); err != nil {
 			return nil, err
