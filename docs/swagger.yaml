@@ -1,6 +1,15 @@
 definitions:
   handler.addExerciseToWorkoutRequest:
     properties:
+      default_reps:
+        example: 10
+        type: integer
+      default_rest:
+        example: 90
+        type: integer
+      default_sets:
+        example: 4
+        type: integer
       exercise_id:
         example: 123
         type: integer
@@ -186,6 +195,15 @@ definitions:
     type: object
   handler.workoutExerciseResponse:
     properties:
+      default_reps:
+        example: 10
+        type: integer
+      default_rest:
+        example: 90
+        type: integer
+      default_sets:
+        example: 4
+        type: integer
       exercise_id:
         example: 123
         type: integer
