@@ -49,9 +49,6 @@ definitions:
       name:
         example: Push Day
         type: string
-      number_of_sets:
-        example: 4
-        type: integer
       rest_between_sets_seconds:
         example: 90
         type: integer
@@ -120,9 +117,6 @@ definitions:
       name:
         example: Push Day
         type: string
-      number_of_sets:
-        example: 4
-        type: integer
       rest_between_sets_seconds:
         example: 90
         type: integer

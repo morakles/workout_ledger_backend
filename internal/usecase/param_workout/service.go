@@ -28,7 +28,6 @@ func (s *ParamWorkoutService) CreateParamWorkout(ctx context.Context, dto Create
 	workout := param_workout.ParamWorkout{
 		UserID:                 dto.UserID,
 		Name:                   strings.TrimSpace(dto.Name),
-		NumberOfSets:           dto.NumberOfSets,
 		RestBetweenSetsSeconds: dto.RestBetweenSetsSeconds,
 	}
 
@@ -41,7 +40,6 @@ func (s *ParamWorkoutService) CreateParamWorkout(ctx context.Context, dto Create
 		ID:                     created.ID,
 		UserID:                 created.UserID,
 		Name:                   created.Name,
-		NumberOfSets:           created.NumberOfSets,
 		RestBetweenSetsSeconds: created.RestBetweenSetsSeconds,
 	}, nil
 }
@@ -60,7 +58,6 @@ func (s *ParamWorkoutService) GetParamWorkoutByID(ctx context.Context, userID, i
 		ID:                     workout.ID,
 		UserID:                 workout.UserID,
 		Name:                   workout.Name,
-		NumberOfSets:           workout.NumberOfSets,
 		RestBetweenSetsSeconds: workout.RestBetweenSetsSeconds,
 	}, nil
 }
@@ -80,7 +77,6 @@ func (s *ParamWorkoutService) GetParamWorkouts(ctx context.Context, userID int64
 			ID:                     workout.ID,
 			UserID:                 workout.UserID,
 			Name:                   workout.Name,
-			NumberOfSets:           workout.NumberOfSets,
 			RestBetweenSetsSeconds: workout.RestBetweenSetsSeconds,
 		})
 	}
@@ -94,9 +90,6 @@ func validateParamWorkout(dto CreateParamWorkoutDTO) error {
 	}
 	name := strings.TrimSpace(dto.Name)
 	if name == "" || len(name) > 255 {
-		return param_workout.ErrInvalidInput
-	}
-	if dto.NumberOfSets < 1 {
 		return param_workout.ErrInvalidInput
 	}
 	if dto.RestBetweenSetsSeconds < 0 {

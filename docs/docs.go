@@ -885,10 +885,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Push Day"
                 },
-                "number_of_sets": {
-                    "type": "integer",
-                    "example": 4
-                },
                 "rest_between_sets_seconds": {
                     "type": "integer",
                     "example": 90
@@ -984,10 +980,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Push Day"
-                },
-                "number_of_sets": {
-                    "type": "integer",
-                    "example": 4
                 },
                 "rest_between_sets_seconds": {
                     "type": "integer",
